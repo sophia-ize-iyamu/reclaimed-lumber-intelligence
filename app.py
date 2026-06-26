@@ -680,22 +680,30 @@ if page == PAGES[9]:
         ("05", "Outputs", ["5 to 10 year forecast", "Maps and gap analysis",
             "Value and scenarios", "Platform roadmap"]),
     ]
-    for col, (n, title, items) in zip(st.columns(len(stages)), stages):
-        with col, st.container(border=True):
-            st.markdown(f"**{n} · {title}**")
-            st.markdown("\n".join(f"- {it}" for it in items))
+    _badge = ("font-family:'JetBrains Mono',monospace;background:var(--gold);color:#fff;"
+              "border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600")
+    for n, title, items in stages:
+        with st.container(border=True):
+            a, b = st.columns([1, 3])
+            with a:
+                st.markdown(f"<span style=\"{_badge}\">{n}</span>", unsafe_allow_html=True)
+                st.markdown(f"**{title}**")
+            with b:
+                st.markdown("\n".join(f"- {it}" for it in items))
 
     st.markdown("#### Inside the recovery cascade")
     st.caption("One typical post-war single-detached home: 120 m2 floor area, built around "
                "1965, mixed demolition practice. Each step multiplies by a sourced coefficient.")
-    casc = [("Floor area", "120 m2", None), ("Framing", "9,290 bf", "79 bf/m2"),
-            ("Recoverable", "2,029 bf", "x0.30 x0.73"), ("Salvageable", "1,420 bf", "x0.70"),
-            ("Spec-ready", "781 bf", "x0.55"), ("Value", "$3,750", "$4.80/bf")]
-    for c, (lab, val_, sub_) in zip(st.columns(6), casc):
-        c.metric(lab, val_, sub_, delta_color="off")
-    st.caption("Coefficients: framing content (McKee & McKeever, FPL 1994); recovery and "
-               "condition (Oregon DEQ 2019); denailing and grading (Falk, FPL-RP-650). "
-               "Gross wood content including panels and finish is 11,911 bf.")
+    casc = [("Floor area", "120 m2"), ("Framing lumber", "9,290 bf"), ("Recoverable", "2,029 bf"),
+            ("Salvageable", "1,420 bf"), ("Spec-ready", "781 bf"), ("Reclaimed value", "$3,750")]
+    for c, (lab, v) in zip(st.columns(3), casc[:3]):
+        c.metric(lab, v)
+    for c, (lab, v) in zip(st.columns(3), casc[3:]):
+        c.metric(lab, v)
+    st.caption("Coefficients applied in order: framing 79 bf/m2; structural recovery x0.30 and "
+               "age-adjusted condition x0.73; denailing and sort x0.70; grading x0.55; "
+               "value $4.80/bf. Sources: McKee & McKeever FPL 1994; Oregon DEQ 2019; "
+               "Falk FPL-RP-650. Gross wood content including panels and finish is 11,911 bf.")
 
     st.markdown("#### Decision: live data or fallback")
     if DARK:
