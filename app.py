@@ -684,12 +684,9 @@ if page == PAGES[9]:
               "border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600")
     for n, title, items in stages:
         with st.container(border=True):
-            a, b = st.columns([1, 3])
-            with a:
-                st.markdown(f"<span style=\"{_badge}\">{n}</span>", unsafe_allow_html=True)
-                st.markdown(f"**{title}**")
-            with b:
-                st.markdown("\n".join(f"- {it}" for it in items))
+            st.markdown(f"<span style=\"{_badge}\">{n}</span> "
+                        f"<b style=\"font-size:1.03rem\">{title}</b>", unsafe_allow_html=True)
+            st.markdown("\n".join(f"- {it}" for it in items))
 
     st.markdown("#### Inside the recovery cascade")
     st.caption("One typical post-war single-detached home: 120 m2 floor area, built around "
@@ -713,20 +710,22 @@ if page == PAGES[9]:
         gcard, grule, gink, gacc, ggreen, ggold, gmut = (
             "#FFFFFF", "#CBCBC4", "#1F2421", "#2F7D4F", "#14532D", "#E9F5EE", "#6B6B63")
     dot = f'''digraph {{
-      rankdir=TB; bgcolor="transparent";
-      node [shape=box style="rounded,filled" fontname="Inter" fontsize=11
+      rankdir=TB; bgcolor="transparent"; nodesep=0.45; ranksep=0.55;
+      node [shape=box style="rounded,filled" fontname="Inter" fontsize=11 penwidth=1
             color="{grule}" fillcolor="{gcard}" fontcolor="{gink}"];
-      edge [color="{gacc}" fontname="Inter" fontsize=9 fontcolor="{gmut}"];
-      run [label="Run pipeline" fillcolor="{ggreen}" fontcolor="white"];
-      d1 [label="Live Toronto toggle on?" shape=diamond];
-      d2 [label="Fetch OK? 200, records, under 20s" shape=diamond];
-      cached [label="Cached figure (labelled cached)" fillcolor="{ggold}"];
-      live [label="Live by-year counts, 2017-2022 mean"];
+      edge [color="{gacc}" penwidth=1.4 arrowsize=0.8 fontname="Inter" fontsize=9 fontcolor="{gmut}"];
+      run  [label="Run pipeline" fillcolor="{ggreen}" fontcolor="white"];
+      d1   [label="Live Toronto data on?" shape=diamond fontcolor="{gink}"];
+      d2   [label="Fetch OK in 20s?" shape=diamond fontcolor="{gink}"];
+      live [label="Live by-year counts\\n2017-2022 mean" fontcolor="{gink}"];
+      cach [label="Cached figure\\n(labelled cached)" fillcolor="{ggold}" fontcolor="{gink}"];
       tier [label="Assign coverage tier" fillcolor="{ggreen}" fontcolor="white"];
       run -> d1;
-      d1 -> cached [label="no"]; d1 -> d2 [label="yes"];
-      d2 -> cached [label="no"]; d2 -> live [label="yes"];
-      cached -> tier; live -> tier;
+      d1 -> d2   [label="yes"];
+      d1 -> cach [label="no"];
+      d2 -> live [label="yes"];
+      d2 -> cach [label="no"];
+      live -> tier; cach -> tier;
     }}'''
     st.graphviz_chart(dot, use_container_width=True)
 
