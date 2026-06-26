@@ -51,15 +51,15 @@ _PLOT_TEMPLATE = "plotly_dark" if DARK else "plotly_white"
 _LAND = "#23262C" if DARK else "#EFEFE9"
 _COUNTRY = "#444954" if DARK else "#CBCBC4"
 _MARKER_LINE = "rgba(255,255,255,0.55)" if DARK else "rgba(40,40,40,0.45)"
-ACCENT = "#3FA06A"
+ACCENT = "#4DB779"  # CCC primary green
 
 # Brand palette for the app chrome, matched to the walkthrough HTML page.
 if DARK:
-    _APP_BG = "#0A0A0D"; _SIDE_BG = "#121219"; _CARD = "rgba(212,178,107,0.06)"
-    _MUTED = "#9A9A92"; _RULE = "rgba(212,178,107,0.20)"; _HEAD = "#F1EFE9"; _GOLD_TXT = "#D4B26B"
+    _APP_BG = "#0A0A0D"; _SIDE_BG = "#101310"; _CARD = "rgba(77,183,121,0.07)"
+    _MUTED = "#9A9A92"; _RULE = "rgba(77,183,121,0.22)"; _HEAD = "#EAF3EC"; _GOLD_TXT = "#5CCF95"
 else:
-    _APP_BG = "#FBFAF6"; _SIDE_BG = "#F2EFE6"; _CARD = "#FFFFFF"
-    _MUTED = "#6B6B63"; _RULE = "#E6E4DA"; _HEAD = "#1B4332"; _GOLD_TXT = "#9C7E45"
+    _APP_BG = "#FBFAF6"; _SIDE_BG = "#EEF2EC"; _CARD = "#FFFFFF"
+    _MUTED = "#6B6B63"; _RULE = "#E2E7DE"; _HEAD = "#14532D"; _GOLD_TXT = "#2F7D4F"
 
 
 def style_chart(fig, height=340, **layout):
@@ -89,7 +89,7 @@ st.markdown(f"""
 :root {{
   --app-bg: {_APP_BG}; --side-bg: {_SIDE_BG}; --card-bg: {_CARD};
   --muted: {_MUTED}; --rule: {_RULE}; --head: {_HEAD};
-  --gold: #D4B26B; --gold-text: {_GOLD_TXT};
+  --gold: #4DB779; --gold-text: {_GOLD_TXT};
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -142,13 +142,30 @@ div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-var
   margin: 4px 0 8px; color: var(--head); font-weight: 600; }
 .hero-sub { color: var(--muted); max-width: 840px; font-size: 1.02rem; line-height: 1.5; }
 .hero-rule { height: 4px; width: 80px; background: var(--gold); border-radius: 3px; margin-top: 16px; }
+
+/* Sidebar vertical navigation (replaces the horizontal tab strip) */
+[data-testid="stSidebar"] [role="radiogroup"] { gap: 2px; }
+[data-testid="stSidebar"] [role="radiogroup"] > label {
+  display: flex; align-items: center; width: 100%; margin: 0;
+  padding: 8px 12px; border-radius: 8px; cursor: pointer;
+  border-left: 3px solid transparent;
+}
+[data-testid="stSidebar"] [role="radiogroup"] > label:hover { background: rgba(77,183,121,0.10); }
+[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) {
+  background: rgba(77,183,121,0.16); border-left-color: var(--gold);
+}
+[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) p {
+  color: var(--gold-text); font-weight: 600;
+}
+[data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child { display: none; }
+[data-testid="stSidebar"] [role="radiogroup"] label p { font-size: 0.95rem; }
 </style>
 """, unsafe_allow_html=True)
 
 # Signature persona color on the tabs (champagne gold from the portfolio sites).
 # Theme-aware: gold on dark, deeper gold on light for legibility.
-_GOLD = "#D4B26B"           # champagne gold (signature)
-_GOLD_TEXT = "#D4B26B" if DARK else "#9C7E45"
+_GOLD = "#4DB779"           # CCC primary green
+_GOLD_TEXT = "#5CCF95" if DARK else "#2F7D4F"
 st.markdown(f"""
 <style>
 [data-baseweb="tab-highlight"] {{ background-color: {_GOLD} !important; }}
@@ -217,6 +234,12 @@ TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
 st.sidebar.title("Reclaimed Lumber Intelligence")
 st.sidebar.caption("Circular Construction Canada")
 
+PAGES = ["Overview", "Municipal baseline", "Hotspots & archetypes",
+         "Forecast & uncertainty", "Ecosystem & gaps", "Platform roadmap",
+         "Projects", "Assumptions", "Sources & void", "How it works"]
+page = st.sidebar.radio("Navigate", PAGES, label_visibility="collapsed")
+
+st.sidebar.markdown("---")
 _scenarios = A.get_assumptions()["scenarios"]
 scenario_key = st.sidebar.selectbox(
     "Scenario", list(_scenarios.keys()),
@@ -226,11 +249,7 @@ st.sidebar.caption(_scenarios[scenario_key]["note"])
 allow_network = st.sidebar.toggle(
     "Use live Toronto Open Data", value=False,
     help="Pull real Toronto demolition permits by year (offline fallback if unreachable).")
-st.sidebar.markdown("---")
-st.sidebar.markdown(
-    "**Deliverables**\n\n1. Municipal baseline\n2. Hotspots & archetypes\n"
-    "3. Forecast & uncertainty\n4. Ecosystem & gaps\n5. Platform roadmap")
-st.sidebar.caption("Every coefficient is sourced. See the Sources & void tab.")
+st.sidebar.caption("Every coefficient is sourced. See the Sources & void section.")
 
 reg = build_registry(scenario_key)
 overrides_sig = tuple(sorted(
@@ -256,16 +275,13 @@ if scenario_key != "baseline":
     st.info(f"Scenario active: **{_scenarios[scenario_key]['label']}**. "
             "All figures below reflect this scenario.")
 
-tabs = st.tabs([
-    "Overview", "1. Municipal baseline", "2. Hotspots & archetypes",
-    "3. Forecast & uncertainty", "4. Ecosystem & gaps", "5. Platform roadmap",
-    "Projects", "Assumptions", "Sources & void", "How it works"])
+# Sections render one at a time based on the sidebar nav selection (`page`).
 
 
 # --------------------------------------------------------------------------- #
 # Overview
 # --------------------------------------------------------------------------- #
-with tabs[0]:
+if page == PAGES[0]:
     nat = data["mc_nat"]
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Gross wood content", fmt_bf(summary["gross_bf"].sum()))
@@ -313,7 +329,7 @@ with tabs[0]:
 # --------------------------------------------------------------------------- #
 # 1. Municipal baseline
 # --------------------------------------------------------------------------- #
-with tabs[1]:
+if page == PAGES[1]:
     st.subheader("Deliverable 1: Municipal demolition & housing-stock baseline")
     st.markdown("First-order, city-wide estimate of salvageable wood per market, "
                 "built from demolition activity, real StatCan housing-stock age, and "
@@ -361,7 +377,7 @@ with tabs[1]:
 # --------------------------------------------------------------------------- #
 # 2. Hotspots & archetypes
 # --------------------------------------------------------------------------- #
-with tabs[2]:
+if page == PAGES[2]:
     st.subheader("Deliverable 2: Neighbourhood hotspots & archetype refinement")
     st.markdown("Demolition clusters in specific neighbourhoods and repeatable building "
                 "types. Toronto is the worked example. Its real permit data shows "
@@ -400,7 +416,7 @@ with tabs[2]:
 # --------------------------------------------------------------------------- #
 # 3. Forecast + uncertainty
 # --------------------------------------------------------------------------- #
-with tabs[3]:
+if page == PAGES[3]:
     st.subheader("Deliverable 3: Material flow forecast with propagated uncertainty")
     fcast = data["forecast"]
     metric = st.selectbox(
@@ -481,7 +497,7 @@ with tabs[3]:
 # --------------------------------------------------------------------------- #
 # 4. Ecosystem & gaps
 # --------------------------------------------------------------------------- #
-with tabs[4]:
+if page == PAGES[4]:
     st.subheader("Deliverable 4: Ecosystem actor map & gap analysis")
     st.markdown("The circular lumber supply chain mapped against supply. Flags markets "
                 "with strong supply but weak recovery or storage capacity.")
@@ -514,7 +530,7 @@ with tabs[4]:
 # --------------------------------------------------------------------------- #
 # 5. Platform roadmap
 # --------------------------------------------------------------------------- #
-with tabs[5]:
+if page == PAGES[5]:
     st.subheader("Deliverable 5: Coordination platform architecture & roadmap")
     path = os.path.join(os.path.dirname(__file__), "docs", "platform_roadmap.md")
     if os.path.exists(path):
@@ -525,7 +541,7 @@ with tabs[5]:
 # --------------------------------------------------------------------------- #
 # Projects
 # --------------------------------------------------------------------------- #
-with tabs[6]:
+if page == PAGES[6]:
     st.subheader("Project store: add a specific demolition project")
     st.markdown("Layer real projects onto the baseline. Each is scored with the same "
                 "sourced cascade and saved persistently.")
@@ -567,7 +583,7 @@ with tabs[6]:
 # --------------------------------------------------------------------------- #
 # Assumptions
 # --------------------------------------------------------------------------- #
-with tabs[7]:
+if page == PAGES[7]:
     st.subheader("Assumptions registry (sourced)")
     st.markdown("Every coefficient, its plausible range, and its source. Move a slider and "
                 "every figure across the app updates. Ranges feed the Monte Carlo model.")
@@ -616,7 +632,7 @@ with tabs[7]:
 # --------------------------------------------------------------------------- #
 # Sources & void
 # --------------------------------------------------------------------------- #
-with tabs[8]:
+if page == PAGES[8]:
     st.subheader("Sources registry & void / coverage analysis")
     st.markdown("What data is real, what is modelled, and where the gaps are. Coverage "
                 "tier drives the demolition-count uncertainty in the Monte Carlo model.")
@@ -643,7 +659,7 @@ with tabs[8]:
 # --------------------------------------------------------------------------- #
 # How it works (embedded visual walkthrough)
 # --------------------------------------------------------------------------- #
-with tabs[9]:
+if page == PAGES[9]:
     st.subheader("How it works: sourcing to output")
     st.markdown("A visual walkthrough of the pipeline, the live-data decision logic, and a "
                 "worked example. Download it to share or print as a one-pager.")
