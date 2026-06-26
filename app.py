@@ -710,7 +710,7 @@ if page == PAGES[9]:
         gcard, grule, gink, gacc, ggreen, ggold, gmut = (
             "#FFFFFF", "#CBCBC4", "#1F2421", "#2F7D4F", "#14532D", "#E9F5EE", "#6B6B63")
     dot = f'''digraph {{
-      rankdir=TB; bgcolor="transparent"; nodesep=0.45; ranksep=0.55;
+      rankdir=TB; bgcolor="transparent"; splines=ortho; nodesep=0.5; ranksep=0.6;
       node [shape=box style="rounded,filled" fontname="Inter" fontsize=11 penwidth=1
             color="{grule}" fillcolor="{gcard}" fontcolor="{gink}"];
       edge [color="{gacc}" penwidth=1.4 arrowsize=0.8 fontname="Inter" fontsize=9 fontcolor="{gmut}"];
