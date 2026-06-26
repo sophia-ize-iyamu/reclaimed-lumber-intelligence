@@ -18,6 +18,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 from config import assumptions as A
 from config import cmas as cma_cfg
@@ -220,7 +221,7 @@ if scenario_key != "baseline":
 tabs = st.tabs([
     "Overview", "1. Municipal baseline", "2. Hotspots & archetypes",
     "3. Forecast & uncertainty", "4. Ecosystem & gaps", "5. Platform roadmap",
-    "Projects", "Assumptions", "Sources & void"])
+    "Projects", "Assumptions", "Sources & void", "How it works"])
 
 
 # --------------------------------------------------------------------------- #
@@ -599,3 +600,25 @@ with tabs[8]:
         with st.expander("Full source list and coefficient provenance (docs/SOURCES.md)"):
             with open(src, "r", encoding="utf-8") as f:
                 st.markdown(f.read())
+
+
+# --------------------------------------------------------------------------- #
+# How it works (embedded visual walkthrough)
+# --------------------------------------------------------------------------- #
+with tabs[9]:
+    st.subheader("How it works: sourcing to output")
+    st.markdown("A visual walkthrough of the pipeline, the live-data decision logic, and a "
+                "worked example. Download it to share or print as a one-pager.")
+    hpath = os.path.join(os.path.dirname(__file__), "docs", "how_it_works.html")
+    if os.path.exists(hpath):
+        with open(hpath, "r", encoding="utf-8") as f:
+            walkthrough = f.read()
+        try:
+            components.html(walkthrough, height=1500, scrolling=True)
+        except Exception:
+            st.info("Inline preview is unavailable in this Streamlit version. "
+                    "Use the download button below to open the walkthrough.")
+        st.download_button("Download the walkthrough (HTML)", walkthrough,
+                           file_name="RSM2700_How_It_Works.html", mime="text/html")
+    else:
+        st.info("Walkthrough file not found.")
