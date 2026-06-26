@@ -12,6 +12,7 @@ Run locally:
     streamlit run app.py
 """
 
+import base64
 import os
 
 import pandas as pd
@@ -704,30 +705,52 @@ if page == PAGES[9]:
 
     st.markdown("#### Decision: live data or fallback")
     if DARK:
-        gcard, grule, gink, gacc, ggreen, ggold, gmut = (
-            "#15151B", "#3A3D44", "#ECECE6", "#4DB779", "#1E5B3A", "#16241B", "#9A9A92")
+        c_term, c_termtx, c_dstroke, c_dtext = "#1E5B3A", "#FFFFFF", "#3A4A40", "#EAF3EC"
+        c_card, c_cstroke, c_ctitle = "#15151B", "#2A2A31", "#ECECE6"
+        c_cach, c_cachst, c_acc, c_mono, c_lbl = "#16241B", "#2E5A3E", "#4DB779", "#5CCF95", "#5CCF95"
     else:
-        gcard, grule, gink, gacc, ggreen, ggold, gmut = (
-            "#FFFFFF", "#CBCBC4", "#1F2421", "#2F7D4F", "#14532D", "#E9F5EE", "#6B6B63")
-    dot = f'''digraph {{
-      rankdir=TB; bgcolor="transparent"; splines=ortho; nodesep=0.5; ranksep=0.6;
-      node [shape=box style="rounded,filled" fontname="Inter" fontsize=11 penwidth=1
-            color="{grule}" fillcolor="{gcard}" fontcolor="{gink}"];
-      edge [color="{gacc}" penwidth=1.4 arrowsize=0.8 fontname="Inter" fontsize=9 fontcolor="{gmut}"];
-      run  [label="Run pipeline" fillcolor="{ggreen}" fontcolor="white"];
-      d1   [label="Live Toronto data on?" shape=diamond fontcolor="{gink}"];
-      d2   [label="Fetch OK in 20s?" shape=diamond fontcolor="{gink}"];
-      live [label="Live by-year counts\\n2017-2022 mean" fontcolor="{gink}"];
-      cach [label="Cached figure\\n(labelled cached)" fillcolor="{ggold}" fontcolor="{gink}"];
-      tier [label="Assign coverage tier" fillcolor="{ggreen}" fontcolor="white"];
-      run -> d1;
-      d1 -> d2   [label="yes"];
-      d1 -> cach [label="no"];
-      d2 -> live [label="yes"];
-      d2 -> cach [label="no"];
-      live -> tier; cach -> tier;
-    }}'''
-    st.graphviz_chart(dot, use_container_width=True)
+        c_term, c_termtx, c_dstroke, c_dtext = "#14532D", "#FFFFFF", "#CBD5C9", "#14532D"
+        c_card, c_cstroke, c_ctitle = "#FFFFFF", "#E2E7DE", "#1F2421"
+        c_cach, c_cachst, c_acc, c_mono, c_lbl = "#E9F5EE", "#BFE3CD", "#2F7D4F", "#2F7D4F", "#2F7D4F"
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 690" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <defs><marker id="dh" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 Z" fill="{c_acc}"/></marker></defs>
+  <g stroke="{c_acc}" stroke-width="2" fill="none">
+    <path d="M380,78 L380,116" marker-end="url(#dh)"/>
+    <path d="M380,232 L380,268" marker-end="url(#dh)"/>
+    <path d="M380,390 L380,453" marker-end="url(#dh)"/>
+    <path d="M380,525 L380,598" marker-end="url(#dh)"/>
+    <path d="M250,175 L150,175 L150,374" marker-end="url(#dh)"/>
+    <path d="M240,330 L150,330"/>
+    <path d="M150,452 L150,628 L279,628" marker-end="url(#dh)"/>
+  </g>
+  <g fill="{c_lbl}" font-family="JetBrains Mono, monospace" font-size="12">
+    <text x="392" y="255">yes</text><text x="392" y="420">yes</text>
+    <text x="158" y="166">no</text><text x="158" y="321">no</text>
+  </g>
+  <rect x="290" y="30" width="180" height="48" rx="11" fill="{c_term}"/>
+  <text x="380" y="60" text-anchor="middle" fill="{c_termtx}" font-size="15" font-weight="700">Run pipeline</text>
+  <polygon points="380,116 510,175 380,234 250,175" fill="none" stroke="{c_dstroke}" stroke-width="1.5"/>
+  <text x="380" y="171" text-anchor="middle" fill="{c_dtext}" font-size="13">Live Toronto</text>
+  <text x="380" y="189" text-anchor="middle" fill="{c_dtext}" font-size="13">toggle on?</text>
+  <polygon points="380,268 520,330 380,392 240,330" fill="none" stroke="{c_dstroke}" stroke-width="1.5"/>
+  <text x="380" y="323" text-anchor="middle" fill="{c_dtext}" font-size="13">Fetch OK?</text>
+  <text x="380" y="340" text-anchor="middle" fill="{c_dtext}" font-size="13">200 + records,</text>
+  <text x="380" y="357" text-anchor="middle" fill="{c_dtext}" font-size="13">under 20s?</text>
+  <rect x="263" y="455" width="234" height="70" rx="11" fill="{c_card}" stroke="{c_cstroke}" stroke-width="1.5"/>
+  <text x="380" y="483" text-anchor="middle" fill="{c_ctitle}" font-size="13.5" font-weight="600">Live by-year counts</text>
+  <text x="380" y="505" text-anchor="middle" fill="{c_mono}" font-family="JetBrains Mono, monospace" font-size="12">2017-2022 stable mean</text>
+  <rect x="52" y="374" width="196" height="74" rx="13" fill="{c_cach}" stroke="{c_cachst}" stroke-width="1.5"/>
+  <text x="150" y="404" text-anchor="middle" fill="{c_ctitle}" font-size="13.5" font-weight="600">Cached figure</text>
+  <text x="150" y="426" text-anchor="middle" fill="{c_mono}" font-family="JetBrains Mono, monospace" font-size="12">"cached" label</text>
+  <rect x="279" y="602" width="202" height="52" rx="13" fill="{c_term}"/>
+  <text x="380" y="625" text-anchor="middle" fill="{c_termtx}" font-size="14" font-weight="700">Assign coverage</text>
+  <text x="380" y="643" text-anchor="middle" fill="{c_termtx}" font-size="14" font-weight="700">tier</text>
+</svg>'''
+    b64 = base64.b64encode(svg.encode("utf-8")).decode()
+    st.markdown(f'<div style="max-width:680px;margin:4px auto 0">'
+                f'<img alt="Live-data decision flow" style="width:100%" '
+                f'src="data:image/svg+xml;base64,{b64}"/></div>', unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1:
