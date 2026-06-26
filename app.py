@@ -28,6 +28,76 @@ st.set_page_config(page_title="Reclaimed Lumber Intelligence | CCC",
                    layout="wide", page_icon="🪵")
 
 
+# --------------------------------------------------------------------------- #
+# Theme-aware styling. The app theme follows the viewer's system / browser
+# setting (Streamlit does this when no theme is pinned), so reading it here lets
+# every chart match light or dark automatically.
+# --------------------------------------------------------------------------- #
+def active_theme():
+    try:
+        t = st.context.theme
+        if t and getattr(t, "type", None):
+            return t.type
+    except Exception:
+        pass
+    return "dark"
+
+
+THEME = active_theme()
+DARK = THEME == "dark"
+_FONT = "#E6E6E6" if DARK else "#1F2421"
+_PLOT_TEMPLATE = "plotly_dark" if DARK else "plotly_white"
+_LAND = "#23262C" if DARK else "#EFEFE9"
+_COUNTRY = "#444954" if DARK else "#CBCBC4"
+_MARKER_LINE = "rgba(255,255,255,0.55)" if DARK else "rgba(40,40,40,0.45)"
+ACCENT = "#3FA06A"
+
+
+def style_chart(fig, height=340, **layout):
+    """Transparent background, theme font, theme template. Inherits page theme."""
+    fig.update_layout(height=height, margin=dict(l=0, r=0, t=10, b=0),
+                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      font_color=_FONT, template=_PLOT_TEMPLATE, **layout)
+    return fig
+
+
+def style_geo(fig, height=460):
+    """Theme-aware map: transparent ocean/background, themed land and borders."""
+    fig.update_geos(fitbounds="locations", resolution=50, showcountries=True,
+                    countrycolor=_COUNTRY, showland=True, landcolor=_LAND,
+                    showocean=False, showframe=False, showcoastlines=True,
+                    coastlinecolor=_COUNTRY, bgcolor="rgba(0,0,0,0)",
+                    lakecolor="rgba(0,0,0,0)")
+    fig.update_traces(marker=dict(line=dict(width=0.6, color=_MARKER_LINE)),
+                      selector=dict(type="scattergeo"))
+    return style_chart(fig, height)
+
+
+# Inject a small CSS polish layer (cards, metric wrapping, tab styling).
+st.markdown("""
+<style>
+/* Metric cards: framed, and wrap instead of truncating on narrow screens */
+div[data-testid="stMetric"] {
+  background: rgba(128,128,128,0.08);
+  border: 1px solid rgba(128,128,128,0.20);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+div[data-testid="stMetric"] label p { white-space: normal; font-size: 0.80rem; opacity: 0.85; }
+div[data-testid="stMetricValue"] {
+  font-size: clamp(1.05rem, 1.7vw, 1.75rem);
+  white-space: normal; line-height: 1.12;
+}
+/* Tabs: a touch more breathing room and a clearer active state */
+button[data-baseweb="tab"] { font-size: 0.95rem; padding-top: 6px; padding-bottom: 6px; }
+/* Rounded dataframes */
+div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
+/* Tighten heading tracking */
+h1, h2, h3 { letter-spacing: -0.015em; }
+</style>
+""", unsafe_allow_html=True)
+
+
 def build_registry(scenario_key="baseline"):
     """Defaults -> scenario overrides -> live slider overrides."""
     reg = A.get_assumptions()
@@ -152,9 +222,7 @@ with tabs[0]:
         hover_data={"spec_ready_bf": ":,.0f", "value_cad": ":,.0f",
                     "lat": False, "lon": False},
         scope="north america", size_max=40, labels={"coverage_tier": "Data coverage"})
-    fig.update_geos(fitbounds="locations", showcountries=True, countrycolor="#cccccc",
-                    showland=True, landcolor="#f5f5f0")
-    fig.update_layout(height=460, margin=dict(l=0, r=0, t=10, b=0))
+    style_geo(fig, 460)
     st.plotly_chart(fig, width="stretch")
 
     colA, colB = st.columns(2)
@@ -170,8 +238,7 @@ with tabs[0]:
         byval = summary.sort_values("value_cad", ascending=False).head(10)
         fig = px.bar(byval, x="value_cad", y="cma", orientation="h",
                      labels={"value_cad": "CAD / yr", "cma": ""})
-        fig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0),
-                          yaxis=dict(autorange="reversed"))
+        style_chart(fig, 320, yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, width="stretch")
     st.caption("Marker size = spec-ready lumber. Colour = data coverage (green high, "
                "amber medium, red low). Only Toronto uses a live permit feed.")
@@ -208,7 +275,7 @@ with tabs[1]:
                    sub["salvageable_bf"].sum(), sub["spec_ready_bf"].sum()]})
         fig = go.Figure(go.Funnel(y=funnel["stage"], x=funnel["bf"],
                                   texttemplate="%{x:,.0f} bf"))
-        fig.update_layout(height=340, margin=dict(l=0, r=0, t=10, b=0))
+        style_chart(fig, 340)
         st.plotly_chart(fig, width="stretch")
     with colB:
         st.markdown("**Spec-ready by building archetype**")
@@ -216,7 +283,7 @@ with tabs[1]:
         by_arch["label"] = by_arch["archetype"].map(lambda a: reg["archetypes"][a]["label"])
         fig = px.bar(by_arch, x="spec_ready_bf", y="label", orientation="h",
                      labels={"spec_ready_bf": "Spec-ready (bf)", "label": ""})
-        fig.update_layout(height=340, margin=dict(l=0, r=0, t=10, b=0))
+        style_chart(fig, 340)
         st.plotly_chart(fig, width="stretch")
 
     st.markdown("**Cohort detail**")
@@ -250,10 +317,8 @@ with tabs[2]:
                              color="dominant_archetype", hover_name="neighbourhood",
                              hover_data={"annual_permits": True, "lat": False, "lon": False},
                              scope="north america", size_max=45)
-        fig.update_geos(fitbounds="locations", showcountries=True, countrycolor="#cccccc",
-                        showland=True, landcolor="#f5f5f0")
-        fig.update_layout(height=420, margin=dict(l=0, r=0, t=10, b=0),
-                          legend_title="Dominant archetype")
+        style_geo(fig, 420)
+        fig.update_layout(legend_title_text="Dominant archetype")
         st.plotly_chart(fig, width="stretch")
     with colB:
         st.markdown("**Toronto demolition hotspots**")
@@ -295,8 +360,7 @@ with tabs[3]:
                 y=list(d[f"{metric}_high"]) + list(d[f"{metric}_low"][::-1]),
                 fill="toself", fillcolor=color, opacity=0.12, line=dict(width=0),
                 hoverinfo="skip", showlegend=False))
-        fig.update_layout(height=420, margin=dict(l=0, r=0, t=10, b=0),
-                          yaxis_title=metric, xaxis_title="year")
+        style_chart(fig, 420, yaxis_title=metric, xaxis_title="year")
         st.plotly_chart(fig, width="stretch")
 
     st.markdown("### Monte Carlo uncertainty (base year)")
@@ -315,9 +379,8 @@ with tabs[3]:
         error_y=dict(type="data", symmetric=False,
                      array=mc["spec_ready_p90"] - mc["spec_ready_p50"],
                      arrayminus=mc["spec_ready_p50"] - mc["spec_ready_p10"]),
-        marker_color="#1565c0"))
-    fig.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0),
-                      yaxis_title="spec-ready bf (P50 with P10-P90)")
+        marker_color=ACCENT))
+    style_chart(fig, 380, yaxis_title="spec-ready bf (P50 with P10-P90)")
     st.plotly_chart(fig, width="stretch")
 
     st.markdown("### Sensitivity: which assumption moves the answer most")
@@ -330,10 +393,10 @@ with tabs[3]:
                              marker_color="#ef6c00", showlegend=False,
                              hovertemplate=f"{r['parameter']}<br>%{{base:,.0f}} to "
                                            f"{hi:,.0f} bf<extra></extra>"))
-    fig.add_vline(x=base_total, line_dash="dash", line_color="#333",
+    fig.add_vline(x=base_total, line_dash="dash", line_color=_FONT,
                   annotation_text="central", annotation_position="top")
-    fig.update_layout(height=340, margin=dict(l=0, r=0, t=20, b=0),
-                      xaxis_title="national spec-ready bf if parameter swings low<->high")
+    style_chart(fig, 340, xaxis_title="national spec-ready bf if parameter swings low to high")
+    fig.update_layout(margin=dict(l=0, r=0, t=28, b=0))
     st.plotly_chart(fig, width="stretch")
     st.caption("Recovery method factor (deconstruction vs demolition) dominates. That's "
                "the single highest-leverage place for CCC to act and to cut uncertainty. "
@@ -378,9 +441,7 @@ with tabs[4]:
     if len(asub):
         fig = px.scatter_geo(asub, lat="lat", lon="lon", color="actor_type",
                              hover_name="name", scope="north america")
-        fig.update_geos(fitbounds="locations", showcountries=True, countrycolor="#cccccc",
-                        showland=True, landcolor="#f5f5f0")
-        fig.update_layout(height=360, margin=dict(l=0, r=0, t=10, b=0))
+        style_geo(fig, 360)
         st.plotly_chart(fig, width="stretch")
 
 
@@ -504,7 +565,7 @@ with tabs[8]:
     fig = px.bar(tier_counts, x="coverage_tier", y="cma_count", color="coverage_tier",
                  color_discrete_map=TIER_COLOR,
                  labels={"cma_count": "number of CMAs", "coverage_tier": "coverage tier"})
-    fig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
+    style_chart(fig, 300, showlegend=False)
     st.plotly_chart(fig, width="stretch")
     src = os.path.join(os.path.dirname(__file__), "docs", "SOURCES.md")
     if os.path.exists(src):
