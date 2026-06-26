@@ -57,7 +57,8 @@ def style_chart(fig, height=340, **layout):
     """Transparent background, theme font, theme template. Inherits page theme."""
     fig.update_layout(height=height, margin=dict(l=0, r=0, t=10, b=0),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font_color=_FONT, template=_PLOT_TEMPLATE, **layout)
+                      font=dict(family="Inter, system-ui, sans-serif", color=_FONT),
+                      template=_PLOT_TEMPLATE, **layout)
     return fig
 
 
@@ -76,24 +77,37 @@ def style_geo(fig, height=460):
 # Inject a small CSS polish layer (cards, metric wrapping, tab styling).
 st.markdown("""
 <style>
-/* Metric cards: framed, and wrap instead of truncating on narrow screens */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Brand typeface: Inter for UI, JetBrains Mono for figures (matches the portfolio sites) */
+html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"],
+.stApp p, .stApp li, .stApp label, .stApp div {
+  font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+
+/* Metric cards: framed, wrapping labels, instrument-panel numerals */
 div[data-testid="stMetric"] {
   background: rgba(128,128,128,0.08);
   border: 1px solid rgba(128,128,128,0.20);
   border-radius: 14px;
   padding: 14px 16px;
 }
-div[data-testid="stMetric"] label p { white-space: normal; font-size: 0.80rem; opacity: 0.85; }
-div[data-testid="stMetricValue"] {
-  font-size: clamp(1.05rem, 1.7vw, 1.75rem);
-  white-space: normal; line-height: 1.12;
+div[data-testid="stMetric"] label p {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;
+  white-space: normal; text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 0.68rem; font-weight: 500; opacity: 0.72;
 }
-/* Tabs: a touch more breathing room and a clearer active state */
+div[data-testid="stMetricValue"] {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.05rem, 1.7vw, 1.7rem);
+  white-space: normal; line-height: 1.12; letter-spacing: -0.01em;
+}
+/* Tabs */
 button[data-baseweb="tab"] { font-size: 0.95rem; padding-top: 6px; padding-bottom: 6px; }
-/* Rounded dataframes */
-div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
-/* Tighten heading tracking */
-h1, h2, h3 { letter-spacing: -0.015em; }
+/* Tables: rounded, with aligned figures */
+div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-variant-numeric: tabular-nums; }
 </style>
 """, unsafe_allow_html=True)
 
