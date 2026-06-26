@@ -97,6 +97,19 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 </style>
 """, unsafe_allow_html=True)
 
+# Signature persona color on the tabs (champagne gold from the portfolio sites).
+# Theme-aware: gold on dark, deeper gold on light for legibility.
+_GOLD = "#D4B26B"           # champagne gold (signature)
+_GOLD_TEXT = "#D4B26B" if DARK else "#9C7E45"
+st.markdown(f"""
+<style>
+[data-baseweb="tab-highlight"] {{ background-color: {_GOLD} !important; }}
+button[data-baseweb="tab"][aria-selected="true"] {{ color: {_GOLD_TEXT} !important; }}
+button[data-baseweb="tab"][aria-selected="true"] p {{ color: {_GOLD_TEXT} !important; font-weight: 600; }}
+button[data-baseweb="tab"]:hover {{ color: {_GOLD_TEXT} !important; }}
+</style>
+""", unsafe_allow_html=True)
+
 
 def build_registry(scenario_key="baseline"):
     """Defaults -> scenario overrides -> live slider overrides."""
