@@ -18,7 +18,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-import streamlit.components.v1 as components
 
 from config import assumptions as A
 from config import cmas as cma_cfg
@@ -657,22 +656,93 @@ if page == PAGES[8]:
 
 
 # --------------------------------------------------------------------------- #
-# How it works (embedded visual walkthrough)
+# How it works (native walkthrough)
 # --------------------------------------------------------------------------- #
 if page == PAGES[9]:
     st.subheader("How it works: sourcing to output")
-    st.markdown("A visual walkthrough of the pipeline, the live-data decision logic, and a "
-                "worked example. Download it to share or print as a one-pager.")
-    hpath = os.path.join(os.path.dirname(__file__), "docs", "how_it_works.html")
-    if os.path.exists(hpath):
-        with open(hpath, "r", encoding="utf-8") as f:
-            walkthrough = f.read()
-        try:
-            components.html(walkthrough, height=1500, scrolling=True)
-        except Exception:
-            st.info("Inline preview is unavailable in this Streamlit version. "
-                    "Use the download button below to open the walkthrough.")
-        st.download_button("Download the walkthrough (HTML)", walkthrough,
-                           file_name="Reclaimed_Lumber_How_It_Works.html", mime="text/html")
+    st.markdown("How the app turns open data and sourced coefficients into a "
+                "confidence-scored estimate of salvageable lumber across Canada's 25 "
+                "largest metro regions.")
+
+    st.markdown("#### The pipeline, end to end")
+    stages = [
+        ("01", "Sourcing & inputs", ["Toronto Open Data (live permits, daily)",
+            "StatCan 2021 Census (dwellings, housing age)",
+            "StatCan Building Permits (demolition rates)",
+            "Coefficients (USDA FPL, Oregon DEQ, MPAC)"]),
+        ("02", "Canonical table", ["One agreed schema for every city",
+            "Void / coverage flags", "Marks real versus modelled"]),
+        ("03", "Recovery cascade", ["Framing lumber in the building",
+            "Recoverable, then salvageable", "Spec-ready, then dollar value",
+            "One sourced coefficient per step"]),
+        ("04", "Uncertainty", ["Monte Carlo over every range",
+            "P10 / P50 / P90 bands", "Tornado: the lever that matters"]),
+        ("05", "Outputs", ["5 to 10 year forecast", "Maps and gap analysis",
+            "Value and scenarios", "Platform roadmap"]),
+    ]
+    for col, (n, title, items) in zip(st.columns(len(stages)), stages):
+        with col, st.container(border=True):
+            st.markdown(f"**{n} · {title}**")
+            st.markdown("\n".join(f"- {it}" for it in items))
+
+    st.markdown("#### Inside the recovery cascade")
+    st.caption("One typical post-war single-detached home: 120 m2 floor area, built around "
+               "1965, mixed demolition practice. Each step multiplies by a sourced coefficient.")
+    casc = [("Floor area", "120 m2", None), ("Framing", "9,290 bf", "79 bf/m2"),
+            ("Recoverable", "2,029 bf", "x0.30 x0.73"), ("Salvageable", "1,420 bf", "x0.70"),
+            ("Spec-ready", "781 bf", "x0.55"), ("Value", "$3,750", "$4.80/bf")]
+    for c, (lab, val_, sub_) in zip(st.columns(6), casc):
+        c.metric(lab, val_, sub_, delta_color="off")
+    st.caption("Coefficients: framing content (McKee & McKeever, FPL 1994); recovery and "
+               "condition (Oregon DEQ 2019); denailing and grading (Falk, FPL-RP-650). "
+               "Gross wood content including panels and finish is 11,911 bf.")
+
+    st.markdown("#### Decision: live data or fallback")
+    if DARK:
+        gcard, grule, gink, gacc, ggreen, ggold, gmut = (
+            "#15151B", "#3A3D44", "#ECECE6", "#4DB779", "#1E5B3A", "#16241B", "#9A9A92")
     else:
-        st.info("Walkthrough file not found.")
+        gcard, grule, gink, gacc, ggreen, ggold, gmut = (
+            "#FFFFFF", "#CBCBC4", "#1F2421", "#2F7D4F", "#14532D", "#E9F5EE", "#6B6B63")
+    dot = f'''digraph {{
+      rankdir=TB; bgcolor="transparent";
+      node [shape=box style="rounded,filled" fontname="Inter" fontsize=11
+            color="{grule}" fillcolor="{gcard}" fontcolor="{gink}"];
+      edge [color="{gacc}" fontname="Inter" fontsize=9 fontcolor="{gmut}"];
+      run [label="Run pipeline" fillcolor="{ggreen}" fontcolor="white"];
+      d1 [label="Live Toronto toggle on?" shape=diamond];
+      d2 [label="Fetch OK? 200, records, under 20s" shape=diamond];
+      cached [label="Cached figure (labelled cached)" fillcolor="{ggold}"];
+      live [label="Live by-year counts, 2017-2022 mean"];
+      tier [label="Assign coverage tier" fillcolor="{ggreen}" fontcolor="white"];
+      run -> d1;
+      d1 -> cached [label="no"]; d1 -> d2 [label="yes"];
+      d2 -> cached [label="no"]; d2 -> live [label="yes"];
+      cached -> tier; live -> tier;
+    }}'''
+    st.graphviz_chart(dot, use_container_width=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("#### Coverage tier sets the band")
+        st.dataframe(pd.DataFrame([
+            {"Coverage": "HIGH", "Markets": "Toronto (live permit feed)", "Band": "+/- 10%"},
+            {"Coverage": "MEDIUM", "Markets": "Vancouver, Montreal, Calgary, Edmonton, Ottawa-Gatineau", "Band": "+/- 25%"},
+            {"Coverage": "LOW", "Markets": "The other 19 CMAs (inferred)", "Band": "+/- 45%"},
+        ]), width="stretch", hide_index=True)
+    with c2:
+        st.markdown("#### What comes out")
+        st.dataframe(pd.DataFrame([
+            {"Output": "National & per-CMA supply, value", "Where": "Overview, Municipal baseline"},
+            {"Output": "Forecast with P10/P50/P90", "Where": "Forecast & uncertainty"},
+            {"Output": "Sensitivity tornado", "Where": "Forecast & uncertainty"},
+            {"Output": "Ecosystem gaps", "Where": "Ecosystem & gaps"},
+            {"Output": "Scenario testing", "Where": "Sidebar scenario selector"},
+        ]), width="stretch", hide_index=True)
+
+    ppath = os.path.join(os.path.dirname(__file__), "docs", "Reclaimed_Lumber_How_It_Works.pdf")
+    if os.path.exists(ppath):
+        with open(ppath, "rb") as pf:
+            st.download_button("Download as PDF", pf.read(),
+                               file_name="Reclaimed_Lumber_How_It_Works.pdf",
+                               mime="application/pdf")
