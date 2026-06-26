@@ -1,6 +1,6 @@
 """
 Reclaimed Lumber Intelligence Layer
-Circular Construction Canada  |  UofT Rotman RSM2700
+Circular Construction Canada
 
 A salvageable-lumber intelligence layer for Canada's 25 largest CMAs, organized
 around the brief's five deliverables. Every coefficient is sourced (see
@@ -215,7 +215,7 @@ TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
 # Sidebar
 # --------------------------------------------------------------------------- #
 st.sidebar.title("Reclaimed Lumber Intelligence")
-st.sidebar.caption("Circular Construction Canada | RSM2700")
+st.sidebar.caption("Circular Construction Canada")
 
 _scenarios = A.get_assumptions()["scenarios"]
 scenario_key = st.sidebar.selectbox(
@@ -244,7 +244,7 @@ summary = data["summary"]
 # --------------------------------------------------------------------------- #
 st.markdown("""
 <div class="hero">
-  <div class="hero-eyebrow">Circular Construction Canada &middot; RSM2700</div>
+  <div class="hero-eyebrow">Circular Construction Canada</div>
   <div class="hero-title">Reclaimed Lumber Intelligence Layer</div>
   <div class="hero-sub">Where salvageable lumber will emerge across Canada's 25 largest metro
   regions, what it's worth, what recovery capacity exists, and where the bottlenecks are.
@@ -657,6 +657,6 @@ with tabs[9]:
             st.info("Inline preview is unavailable in this Streamlit version. "
                     "Use the download button below to open the walkthrough.")
         st.download_button("Download the walkthrough (HTML)", walkthrough,
-                           file_name="RSM2700_How_It_Works.html", mime="text/html")
+                           file_name="Reclaimed_Lumber_How_It_Works.html", mime="text/html")
     else:
         st.info("Walkthrough file not found.")
