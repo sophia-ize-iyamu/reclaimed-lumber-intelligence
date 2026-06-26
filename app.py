@@ -30,73 +30,55 @@ st.set_page_config(page_title="Reclaimed Lumber Intelligence | CCC",
 
 
 # --------------------------------------------------------------------------- #
-# Theme-aware styling. The app theme follows the viewer's system / browser
-# setting (Streamlit does this when no theme is pinned), so reading it here lets
-# every chart match light or dark automatically.
+# Styling. The app follows the viewer's system light/dark setting: Streamlit's
+# base theme tracks the OS, and all custom styling is driven by the CSS
+# prefers-color-scheme media query (which reads the OS directly). Charts are
+# theme-neutral so they read on either background, no detection needed.
 # --------------------------------------------------------------------------- #
-def active_theme():
-    try:
-        t = st.context.theme
-        if t and getattr(t, "type", None):
-            return t.type
-    except Exception:
-        pass
-    return "dark"
-
-
-THEME = active_theme()
-DARK = THEME == "dark"
-_FONT = "#E6E6E6" if DARK else "#1F2421"
-_PLOT_TEMPLATE = "plotly_dark" if DARK else "plotly_white"
-_LAND = "#23262C" if DARK else "#EFEFE9"
-_COUNTRY = "#444954" if DARK else "#CBCBC4"
-_MARKER_LINE = "rgba(255,255,255,0.55)" if DARK else "rgba(40,40,40,0.45)"
 ACCENT = "#4DB779"  # CCC primary green
-
-# Brand palette for the app chrome, matched to the walkthrough HTML page.
-if DARK:
-    _APP_BG = "#0A0A0D"; _SIDE_BG = "#101310"; _CARD = "rgba(77,183,121,0.07)"
-    _MUTED = "#9A9A92"; _RULE = "rgba(77,183,121,0.22)"; _HEAD = "#EAF3EC"; _GOLD_TXT = "#5CCF95"
-else:
-    _APP_BG = "#FBFAF6"; _SIDE_BG = "#EEF2EC"; _CARD = "#FFFFFF"
-    _MUTED = "#6B6B63"; _RULE = "#E2E7DE"; _HEAD = "#14532D"; _GOLD_TXT = "#2F7D4F"
 
 
 def style_chart(fig, height=340, **layout):
-    """Transparent background, theme font, theme template. Inherits page theme."""
+    """Transparent background and neutral text/grid that read on light or dark."""
     fig.update_layout(height=height, margin=dict(l=0, r=0, t=10, b=0),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(family="Inter, system-ui, sans-serif", color=_FONT),
-                      template=_PLOT_TEMPLATE, **layout)
+                      font=dict(family="Inter, system-ui, sans-serif", color="#8B8D90"),
+                      template="none", **layout)
+    fig.update_xaxes(gridcolor="rgba(128,128,128,0.18)", zerolinecolor="rgba(128,128,128,0.25)",
+                     linecolor="rgba(128,128,128,0.30)")
+    fig.update_yaxes(gridcolor="rgba(128,128,128,0.18)", zerolinecolor="rgba(128,128,128,0.25)",
+                     linecolor="rgba(128,128,128,0.30)")
     return fig
 
 
 def style_geo(fig, height=460):
-    """Theme-aware map: transparent ocean/background, themed land and borders."""
+    """Transparent map with low-opacity gray land that tints either background."""
     fig.update_geos(fitbounds="locations", resolution=50, showcountries=True,
-                    countrycolor=_COUNTRY, showland=True, landcolor=_LAND,
-                    showocean=False, showframe=False, showcoastlines=True,
-                    coastlinecolor=_COUNTRY, bgcolor="rgba(0,0,0,0)",
-                    lakecolor="rgba(0,0,0,0)")
-    fig.update_traces(marker=dict(line=dict(width=0.6, color=_MARKER_LINE)),
+                    countrycolor="rgba(128,128,128,0.40)", showland=True,
+                    landcolor="rgba(128,128,128,0.16)", showocean=False, showframe=False,
+                    showcoastlines=True, coastlinecolor="rgba(128,128,128,0.40)",
+                    bgcolor="rgba(0,0,0,0)", lakecolor="rgba(0,0,0,0)")
+    fig.update_traces(marker=dict(line=dict(width=0.6, color="rgba(128,128,128,0.55)")),
                       selector=dict(type="scattergeo"))
     return style_chart(fig, height)
-
-
-# Inject a small CSS polish layer (cards, metric wrapping, tab styling).
-st.markdown(f"""
-<style>
-:root {{
-  --app-bg: {_APP_BG}; --side-bg: {_SIDE_BG}; --card-bg: {_CARD};
-  --muted: {_MUTED}; --rule: {_RULE}; --head: {_HEAD};
-  --gold: #4DB779; --gold-text: {_GOLD_TXT};
-}}
-</style>
-""", unsafe_allow_html=True)
 
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
+
+/* Colours follow the operating system light/dark setting via prefers-color-scheme */
+:root {
+  --app-bg:#FBFAF6; --side-bg:#EEF2EC; --card-bg:#FFFFFF;
+  --muted:#6B6B63; --rule:#E2E7DE; --head:#14532D;
+  --gold:#4DB779; --gold-text:#2F7D4F;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-bg:#0A0A0D; --side-bg:#101310; --card-bg:rgba(77,183,121,0.08);
+    --muted:#9A9A92; --rule:rgba(77,183,121,0.22); --head:#EAF3EC;
+    --gold:#4DB779; --gold-text:#5CCF95;
+  }
+}
 
 /* App surfaces matched to the walkthrough page */
 .stApp, [data-testid="stAppViewContainer"] { background-color: var(--app-bg); }
@@ -162,16 +144,12 @@ div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-var
 </style>
 """, unsafe_allow_html=True)
 
-# Signature persona color on the tabs (champagne gold from the portfolio sites).
-# Theme-aware: gold on dark, deeper gold on light for legibility.
-_GOLD = "#4DB779"           # CCC primary green
-_GOLD_TEXT = "#5CCF95" if DARK else "#2F7D4F"
-st.markdown(f"""
+st.markdown("""
 <style>
-[data-baseweb="tab-highlight"] {{ background-color: {_GOLD} !important; }}
-button[data-baseweb="tab"][aria-selected="true"] {{ color: {_GOLD_TEXT} !important; }}
-button[data-baseweb="tab"][aria-selected="true"] p {{ color: {_GOLD_TEXT} !important; font-weight: 600; }}
-button[data-baseweb="tab"]:hover {{ color: {_GOLD_TEXT} !important; }}
+[data-baseweb="tab-highlight"] { background-color: var(--gold) !important; }
+button[data-baseweb="tab"][aria-selected="true"] { color: var(--gold-text) !important; }
+button[data-baseweb="tab"][aria-selected="true"] p { color: var(--gold-text) !important; font-weight: 600; }
+button[data-baseweb="tab"]:hover { color: var(--gold-text) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -475,7 +453,7 @@ if page == PAGES[3]:
                              marker_color="#ef6c00", showlegend=False,
                              hovertemplate=f"{r['parameter']}<br>%{{base:,.0f}} to "
                                            f"{hi:,.0f} bf<extra></extra>"))
-    fig.add_vline(x=base_total, line_dash="dash", line_color=_FONT,
+    fig.add_vline(x=base_total, line_dash="dash", line_color="rgba(128,128,128,0.7)",
                   annotation_text="central", annotation_position="top")
     style_chart(fig, 340, xaxis_title="national spec-ready bf if parameter swings low to high")
     fig.update_layout(margin=dict(l=0, r=0, t=28, b=0))
@@ -704,18 +682,22 @@ if page == PAGES[9]:
                "Falk FPL-RP-650. Gross wood content including panels and finish is 11,911 bf.")
 
     st.markdown("#### Decision: live data or fallback")
-    if DARK:
-        c_term, c_termtx, c_dstroke, c_dtext = "#1E5B3A", "#FFFFFF", "#3A4A40", "#EAF3EC"
-        c_card, c_cstroke, c_ctitle = "#15151B", "#2A2A31", "#ECECE6"
-        c_cach, c_cachst, c_acc, c_mono, c_lbl = "#16241B", "#2E5A3E", "#4DB779", "#5CCF95", "#5CCF95"
-    else:
-        c_term, c_termtx, c_dstroke, c_dtext = "#14532D", "#FFFFFF", "#CBD5C9", "#14532D"
-        c_card, c_cstroke, c_ctitle = "#FFFFFF", "#E2E7DE", "#1F2421"
-        c_cach, c_cachst, c_acc, c_mono, c_lbl = "#E9F5EE", "#BFE3CD", "#2F7D4F", "#2F7D4F", "#2F7D4F"
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 690" font-family="Inter, Segoe UI, Arial, sans-serif">
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 690" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <style>
+    .term{fill:#14532D} .termtx{fill:#ffffff} .dia{fill:none;stroke:#CBD5C9;stroke-width:1.5}
+    .dtext{fill:#14532D} .card{fill:#FFFFFF;stroke:#E2E7DE;stroke-width:1.5}
+    .cach{fill:#E9F5EE;stroke:#BFE3CD;stroke-width:1.5} .ctitle{fill:#1F2421}
+    .edge{stroke:#2F7D4F;stroke-width:2;fill:none} .accf{fill:#2F7D4F}
+    .mono{fill:#2F7D4F} .lbl{fill:#2F7D4F}
+    @media (prefers-color-scheme: dark){
+      .term{fill:#1E5B3A} .dia{stroke:#3A4A40} .dtext{fill:#EAF3EC}
+      .card{fill:#15151B;stroke:#2A2A31} .cach{fill:#16241B;stroke:#2E5A3E} .ctitle{fill:#ECECE6}
+      .edge{stroke:#4DB779} .accf{fill:#4DB779} .mono{fill:#5CCF95} .lbl{fill:#5CCF95}
+    }
+  </style>
   <defs><marker id="dh" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto">
-    <path d="M0,0 L9,4.5 L0,9 Z" fill="{c_acc}"/></marker></defs>
-  <g stroke="{c_acc}" stroke-width="2" fill="none">
+    <path d="M0,0 L9,4.5 L0,9 Z" class="accf"/></marker></defs>
+  <g class="edge">
     <path d="M380,78 L380,116" marker-end="url(#dh)"/>
     <path d="M380,232 L380,268" marker-end="url(#dh)"/>
     <path d="M380,390 L380,453" marker-end="url(#dh)"/>
@@ -724,28 +706,28 @@ if page == PAGES[9]:
     <path d="M240,330 L150,330"/>
     <path d="M150,452 L150,628 L279,628" marker-end="url(#dh)"/>
   </g>
-  <g fill="{c_lbl}" font-family="JetBrains Mono, monospace" font-size="12">
+  <g class="lbl" font-family="JetBrains Mono, monospace" font-size="12">
     <text x="392" y="255">yes</text><text x="392" y="420">yes</text>
     <text x="158" y="166">no</text><text x="158" y="321">no</text>
   </g>
-  <rect x="290" y="30" width="180" height="48" rx="11" fill="{c_term}"/>
-  <text x="380" y="60" text-anchor="middle" fill="{c_termtx}" font-size="15" font-weight="700">Run pipeline</text>
-  <polygon points="380,116 510,175 380,234 250,175" fill="none" stroke="{c_dstroke}" stroke-width="1.5"/>
-  <text x="380" y="171" text-anchor="middle" fill="{c_dtext}" font-size="13">Live Toronto</text>
-  <text x="380" y="189" text-anchor="middle" fill="{c_dtext}" font-size="13">toggle on?</text>
-  <polygon points="380,268 520,330 380,392 240,330" fill="none" stroke="{c_dstroke}" stroke-width="1.5"/>
-  <text x="380" y="323" text-anchor="middle" fill="{c_dtext}" font-size="13">Fetch OK?</text>
-  <text x="380" y="340" text-anchor="middle" fill="{c_dtext}" font-size="13">200 + records,</text>
-  <text x="380" y="357" text-anchor="middle" fill="{c_dtext}" font-size="13">under 20s?</text>
-  <rect x="263" y="455" width="234" height="70" rx="11" fill="{c_card}" stroke="{c_cstroke}" stroke-width="1.5"/>
-  <text x="380" y="483" text-anchor="middle" fill="{c_ctitle}" font-size="13.5" font-weight="600">Live by-year counts</text>
-  <text x="380" y="505" text-anchor="middle" fill="{c_mono}" font-family="JetBrains Mono, monospace" font-size="12">2017-2022 stable mean</text>
-  <rect x="52" y="374" width="196" height="74" rx="13" fill="{c_cach}" stroke="{c_cachst}" stroke-width="1.5"/>
-  <text x="150" y="404" text-anchor="middle" fill="{c_ctitle}" font-size="13.5" font-weight="600">Cached figure</text>
-  <text x="150" y="426" text-anchor="middle" fill="{c_mono}" font-family="JetBrains Mono, monospace" font-size="12">"cached" label</text>
-  <rect x="279" y="602" width="202" height="52" rx="13" fill="{c_term}"/>
-  <text x="380" y="625" text-anchor="middle" fill="{c_termtx}" font-size="14" font-weight="700">Assign coverage</text>
-  <text x="380" y="643" text-anchor="middle" fill="{c_termtx}" font-size="14" font-weight="700">tier</text>
+  <rect x="290" y="30" width="180" height="48" rx="11" class="term"/>
+  <text x="380" y="60" text-anchor="middle" class="termtx" font-size="15" font-weight="700">Run pipeline</text>
+  <polygon points="380,116 510,175 380,234 250,175" class="dia"/>
+  <text x="380" y="171" text-anchor="middle" class="dtext" font-size="13">Live Toronto</text>
+  <text x="380" y="189" text-anchor="middle" class="dtext" font-size="13">toggle on?</text>
+  <polygon points="380,268 520,330 380,392 240,330" class="dia"/>
+  <text x="380" y="323" text-anchor="middle" class="dtext" font-size="13">Fetch OK?</text>
+  <text x="380" y="340" text-anchor="middle" class="dtext" font-size="13">200 + records,</text>
+  <text x="380" y="357" text-anchor="middle" class="dtext" font-size="13">under 20s?</text>
+  <rect x="263" y="455" width="234" height="70" rx="11" class="card"/>
+  <text x="380" y="483" text-anchor="middle" class="ctitle" font-size="13.5" font-weight="600">Live by-year counts</text>
+  <text x="380" y="505" text-anchor="middle" class="mono" font-family="JetBrains Mono, monospace" font-size="12">2017-2022 stable mean</text>
+  <rect x="52" y="374" width="196" height="74" rx="13" class="cach"/>
+  <text x="150" y="404" text-anchor="middle" class="ctitle" font-size="13.5" font-weight="600">Cached figure</text>
+  <text x="150" y="426" text-anchor="middle" class="mono" font-family="JetBrains Mono, monospace" font-size="12">"cached" label</text>
+  <rect x="279" y="602" width="202" height="52" rx="13" class="term"/>
+  <text x="380" y="625" text-anchor="middle" class="termtx" font-size="14" font-weight="700">Assign coverage</text>
+  <text x="380" y="643" text-anchor="middle" class="termtx" font-size="14" font-weight="700">tier</text>
 </svg>'''
     b64 = base64.b64encode(svg.encode("utf-8")).decode()
     st.markdown(f'<div style="max-width:680px;margin:4px auto 0">'
