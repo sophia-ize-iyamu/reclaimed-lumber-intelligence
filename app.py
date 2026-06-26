@@ -53,6 +53,14 @@ _COUNTRY = "#444954" if DARK else "#CBCBC4"
 _MARKER_LINE = "rgba(255,255,255,0.55)" if DARK else "rgba(40,40,40,0.45)"
 ACCENT = "#3FA06A"
 
+# Brand palette for the app chrome, matched to the walkthrough HTML page.
+if DARK:
+    _APP_BG = "#0A0A0D"; _SIDE_BG = "#121219"; _CARD = "rgba(212,178,107,0.06)"
+    _MUTED = "#9A9A92"; _RULE = "rgba(212,178,107,0.20)"; _HEAD = "#F1EFE9"; _GOLD_TXT = "#D4B26B"
+else:
+    _APP_BG = "#FBFAF6"; _SIDE_BG = "#F2EFE6"; _CARD = "#FFFFFF"
+    _MUTED = "#6B6B63"; _RULE = "#E6E4DA"; _HEAD = "#1B4332"; _GOLD_TXT = "#9C7E45"
+
 
 def style_chart(fig, height=340, **layout):
     """Transparent background, theme font, theme template. Inherits page theme."""
@@ -76,39 +84,64 @@ def style_geo(fig, height=460):
 
 
 # Inject a small CSS polish layer (cards, metric wrapping, tab styling).
+st.markdown(f"""
+<style>
+:root {{
+  --app-bg: {_APP_BG}; --side-bg: {_SIDE_BG}; --card-bg: {_CARD};
+  --muted: {_MUTED}; --rule: {_RULE}; --head: {_HEAD};
+  --gold: #D4B26B; --gold-text: {_GOLD_TXT};
+}}
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
 
-/* Brand typeface: Inter for UI, JetBrains Mono for figures (matches the portfolio sites) */
-html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"],
-.stApp p, .stApp li, .stApp label, .stApp div {
+/* App surfaces matched to the walkthrough page */
+.stApp, [data-testid="stAppViewContainer"] { background-color: var(--app-bg); }
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stSidebar"] { background-color: var(--side-bg); border-right: 1px solid var(--rule); }
+[data-testid="stSidebar"] > div:first-child { border-top: 3px solid var(--gold); }
+
+/* Inter for UI, JetBrains Mono for figures */
+html, body, .stApp, [data-testid="stSidebar"], .stApp p, .stApp li, .stApp label, .stApp div {
   font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
-h1, h2, h3, h4 { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+/* Editorial serif headings (brand: Source Serif 4) */
+h1, h2, h3, h4 {
+  font-family: 'Source Serif 4', Georgia, serif !important;
+  font-weight: 600 !important; letter-spacing: -0.01em; color: var(--head);
+}
+/* Section subheaders get a gold lead bar */
+.stApp [data-testid="stMarkdownContainer"] h3 { padding-left: 12px; border-left: 4px solid var(--gold); }
 
-/* Metric cards: framed, wrapping labels, instrument-panel numerals */
+/* Metric cards: framed, gold accent, instrument-panel numerals */
 div[data-testid="stMetric"] {
-  background: rgba(128,128,128,0.08);
-  border: 1px solid rgba(128,128,128,0.20);
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: var(--card-bg); border: 1px solid var(--rule); border-left: 3px solid var(--gold);
+  border-radius: 12px; padding: 14px 16px;
 }
 div[data-testid="stMetric"] label p {
-  font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;
-  white-space: normal; text-transform: uppercase; letter-spacing: 0.05em;
-  font-size: 0.68rem; font-weight: 500; opacity: 0.72;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', monospace; white-space: normal;
+  text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; font-weight: 500; opacity: 0.72;
 }
 div[data-testid="stMetricValue"] {
-  font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: clamp(1.05rem, 1.7vw, 1.7rem);
-  white-space: normal; line-height: 1.12; letter-spacing: -0.01em;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', monospace; font-variant-numeric: tabular-nums;
+  font-size: clamp(1.05rem, 1.7vw, 1.7rem); white-space: normal; line-height: 1.12; letter-spacing: -0.01em;
 }
 /* Tabs */
 button[data-baseweb="tab"] { font-size: 0.95rem; padding-top: 6px; padding-bottom: 6px; }
-/* Tables: rounded, with aligned figures */
+/* Tables */
 div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-variant-numeric: tabular-nums; }
+
+/* Hero header */
+.hero { margin: 2px 0 4px; }
+.hero-eyebrow { font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+  letter-spacing: .16em; font-size: 11px; color: var(--gold-text); }
+.hero-title { font-family: 'Source Serif 4', Georgia, serif; font-size: 2.4rem; line-height: 1.05;
+  margin: 4px 0 8px; color: var(--head); font-weight: 600; }
+.hero-sub { color: var(--muted); max-width: 840px; font-size: 1.02rem; line-height: 1.5; }
+.hero-rule { height: 4px; width: 80px; background: var(--gold); border-radius: 3px; margin-top: 16px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -209,11 +242,16 @@ summary = data["summary"]
 # --------------------------------------------------------------------------- #
 # Header
 # --------------------------------------------------------------------------- #
-st.title("Reclaimed Lumber Intelligence Layer")
-st.markdown(
-    "Where will salvageable lumber emerge across Canada's 25 largest metro regions, "
-    "what it's worth, what recovery capacity exists, and where the bottlenecks are. "
-    "Coefficients are sourced, and the uncertainty in them carries through to every number.")
+st.markdown("""
+<div class="hero">
+  <div class="hero-eyebrow">Circular Construction Canada &middot; RSM2700</div>
+  <div class="hero-title">Reclaimed Lumber Intelligence Layer</div>
+  <div class="hero-sub">Where salvageable lumber will emerge across Canada's 25 largest metro
+  regions, what it's worth, what recovery capacity exists, and where the bottlenecks are.
+  Every coefficient is sourced, and the uncertainty carries through to every number.</div>
+  <div class="hero-rule"></div>
+</div>
+""", unsafe_allow_html=True)
 if scenario_key != "baseline":
     st.info(f"Scenario active: **{_scenarios[scenario_key]['label']}**. "
             "All figures below reflect this scenario.")
