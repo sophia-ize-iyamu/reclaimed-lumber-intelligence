@@ -416,8 +416,12 @@ if page == "Overview":
                      labels={"value_cad": "CAD / yr", "cma": ""})
         style_chart(fig, 320, yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, width="stretch")
-    cap("Marker size = spec-ready lumber. Colour = data coverage (green high, "
-               "amber medium, red low). Only Toronto uses a live permit feed.")
+    cap("Marker size = spec-ready lumber. Colour = data coverage, a confidence class based on how "
+        "each metro's demolition count is known: "
+        "<b>high</b> (green) = live permit feed, about +/-10% (Toronto only); "
+        "<b>medium</b> (amber) = real StatCan demolition figure with the cohort split modelled, "
+        "about +/-25% (5 metros); "
+        "<b>low</b> (red) = inferred from dwellings x a sourced rate, about +/-45% (the other 19).")
 
 
 # --------------------------------------------------------------------------- #
