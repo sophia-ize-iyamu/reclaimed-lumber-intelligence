@@ -236,8 +236,8 @@ st.sidebar.caption("Circular Construction Canada")
 NAV = [
     ("", ["Overview"]),
     ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty"]),
-    ("Demand", ["Demand segments", "Demand gaps", "Economics"]),
-    ("Ecosystem", ["Ecosystem", "Supply gaps"]),
+    ("Demand", ["Demand segments", "Economics"]),
+    ("Ecosystem", ["Ecosystem", "Supply gaps", "Demand gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
     ("Platform", ["Platform roadmap", "Projects", "Matchmaking"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
