@@ -41,14 +41,16 @@ ACCENT = "#4DB779"  # CCC primary green
 
 def style_chart(fig, height=340, **layout):
     """Transparent background and neutral text/grid that read on light or dark."""
-    fig.update_layout(height=height, margin=dict(l=0, r=0, t=10, b=0),
+    fig.update_layout(height=height, margin=dict(l=8, r=14, t=12, b=10),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                       font=dict(family="Inter, system-ui, sans-serif", color="#8B8D90"),
                       template="none", **layout)
+    # automargin reserves room for tick labels and axis titles so neither lands
+    # on the plot; title_standoff keeps the axis title clear of the ticks.
     fig.update_xaxes(gridcolor="rgba(128,128,128,0.18)", zerolinecolor="rgba(128,128,128,0.25)",
-                     linecolor="rgba(128,128,128,0.30)")
+                     linecolor="rgba(128,128,128,0.30)", automargin=True, title_standoff=10)
     fig.update_yaxes(gridcolor="rgba(128,128,128,0.18)", zerolinecolor="rgba(128,128,128,0.25)",
-                     linecolor="rgba(128,128,128,0.30)")
+                     linecolor="rgba(128,128,128,0.30)", automargin=True, title_standoff=10)
     return fig
 
 
