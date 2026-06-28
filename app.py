@@ -142,6 +142,10 @@ div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-var
 }
 [data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child { display: none; }
 [data-testid="stSidebar"] [role="radiogroup"] label p { font-size: 0.95rem; }
+[data-testid="stSidebar"] .navhdr {
+  font-size: 0.72rem; letter-spacing: 0.09em; font-weight: 700; text-transform: uppercase;
+  color: var(--muted); margin: 14px 0 2px; padding-left: 12px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -213,11 +217,42 @@ TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
 st.sidebar.title("Reclaimed Lumber Intelligence")
 st.sidebar.caption("Circular Construction Canada")
 
-PAGES = ["Overview", "Municipal baseline", "Hotspots & archetypes",
-         "Forecast & uncertainty", "Ecosystem & gaps", "Demand & economics",
-         "Platform roadmap", "Projects", "Assumptions", "Sources & void",
-         "How it works"]
-page = st.sidebar.radio("Navigate", PAGES, label_visibility="collapsed")
+NAV = [
+    ("", ["Overview"]),
+    ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty"]),
+    ("Demand", ["Demand segments", "Economics"]),
+    ("Ecosystem", ["Ecosystem", "Supply gaps"]),
+    ("Platform", ["Platform roadmap", "Projects"]),
+    ("Reference", ["Assumptions", "Sources & void", "How it works"]),
+]
+PAGES = [p for _, items in NAV for p in items]
+if "page" not in st.session_state or st.session_state.page not in PAGES:
+    st.session_state.page = "Overview"
+
+
+def _nav_pick(gid):
+    val = st.session_state.get(gid)
+    if not val:
+        return
+    st.session_state.page = val
+    for k in list(st.session_state.keys()):
+        if k.startswith("navgrp_") and k != gid:
+            st.session_state[k] = None
+
+
+for _gi, (_header, _items) in enumerate(NAV):
+    _gid = f"navgrp_{_gi}"
+    if _gid not in st.session_state:
+        st.session_state[_gid] = st.session_state.page if st.session_state.page in _items else None
+    if _header:
+        _active = st.session_state.page in _items
+        with st.sidebar.expander(_header, expanded=_active):
+            st.radio(f"nav {_gi}", _items, key=_gid, label_visibility="collapsed",
+                     on_change=_nav_pick, args=(_gid,))
+    else:
+        st.sidebar.radio(f"nav {_gi}", _items, key=_gid, label_visibility="collapsed",
+                         on_change=_nav_pick, args=(_gid,))
+page = st.session_state.page
 
 st.sidebar.markdown("---")
 _scenarios = A.get_assumptions()["scenarios"]
@@ -477,7 +512,7 @@ if page == "Forecast & uncertainty":
 # --------------------------------------------------------------------------- #
 # 4. Ecosystem & gaps
 # --------------------------------------------------------------------------- #
-if page == "Ecosystem & gaps":
+if page == "Ecosystem":
     st.subheader("Deliverable 4: The reclaimed-wood ecosystem")
     st.markdown("Circularity is two-sided: the buildings that generate waste wood, and the firms "
                 "that recover, process, remake, retail, recycle, downcycle and upcycle it. This maps "
@@ -563,6 +598,16 @@ if page == "Ecosystem & gaps":
     style_chart(fig, 320)
     st.plotly_chart(fig, width="stretch")
 
+
+
+# --------------------------------------------------------------------------- #
+# Supply gaps
+# --------------------------------------------------------------------------- #
+if page == "Supply gaps":
+    st.subheader("Where supply outruns the in-province ecosystem")
+    st.markdown("Each CMA's spec-ready supply is set against the recovery and processing capacity "
+                "in its province, flagging markets where supply is high relative to the firms that "
+                "can handle it.")
     st.markdown("#### Gap analysis: supply against the in-province ecosystem")
     gaps = data["gaps"]
     n_gap = (gaps["gap_flag"] != "Workable base").sum()
@@ -582,8 +627,8 @@ if page == "Ecosystem & gaps":
 # --------------------------------------------------------------------------- #
 # Demand & economics
 # --------------------------------------------------------------------------- #
-if page == "Demand & economics":
-    st.subheader("Demand side and economics")
+if page == "Demand segments":
+    st.subheader("Demand side: who buys reclaimed wood")
     st.markdown("The supply model says how much reusable lumber appears. This answers the harder "
                 "question the feedback raised: who buys it, what it's worth, and why so much "
                 "recoverable wood still isn't reclaimed.")
@@ -615,6 +660,15 @@ if page == "Demand & economics":
     st.dataframe(seg_tbl[["segment", "tier", "absorption", "note"]],
                  width="stretch", hide_index=True)
 
+
+
+# --------------------------------------------------------------------------- #
+# Economics
+# --------------------------------------------------------------------------- #
+if page == "Economics":
+    st.subheader("Economics and why reuse stalls")
+    st.markdown("Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. "
+                "This is the economics behind the supply leak, and the constraints that hold it back.")
     st.markdown("#### Economics")
     ec = demand.ECONOMICS
     rp = ec["reclaimed_premium"]; dp = ec["deconstruction_premium"]
@@ -891,7 +945,7 @@ if page == "How it works":
             {"Output": "National & per-CMA supply, value", "Where": "Overview, Municipal baseline"},
             {"Output": "Forecast with P10/P50/P90", "Where": "Forecast & uncertainty"},
             {"Output": "Sensitivity tornado", "Where": "Forecast & uncertainty"},
-            {"Output": "Ecosystem gaps", "Where": "Ecosystem & gaps"},
+            {"Output": "Ecosystem gaps", "Where": "Ecosystem > Supply gaps"},
             {"Output": "Scenario testing", "Where": "Sidebar scenario selector"},
         ]), width="stretch", hide_index=True)
 
