@@ -22,7 +22,7 @@ import streamlit as st
 
 from config import assumptions as A
 from config import cmas as cma_cfg
-from config import companies, demand
+from config import companies, demand, carbon, policy
 from config.assumptions import val
 from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty
 
@@ -220,6 +220,9 @@ def fmt_m3(x, reg):
 
 
 TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
+# Confidence score per market, derived from data-coverage tier (mirrors the
+# Monte Carlo bands: high +/-15%, medium +/-25%, low +/-45%).
+TIER_CONFIDENCE = {"high": 85, "medium": 75, "low": 55}
 
 
 # --------------------------------------------------------------------------- #
@@ -233,6 +236,7 @@ NAV = [
     ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty"]),
     ("Demand", ["Demand segments", "Demand gaps", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps"]),
+    ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
     ("Platform", ["Platform roadmap", "Projects"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
 ]
@@ -325,6 +329,11 @@ if page == "Overview":
                f"{_ta / _spec:.0f}x current spec-ready supply, so across markets the binding "
                "constraint is supply, not appetite. See Demand for the buyer breakdown and "
                "Demand gaps for the per-market balance.")
+    _av = carbon.avoided_production_t(_spec); _bio = carbon.biogenic_stored_t(_spec)
+    st.caption(f"Embodied carbon: reusing the spec-ready supply avoids about {_av:,.0f} t CO2e "
+               f"of new-lumber manufacturing a year and keeps about {_bio:,.0f} t CO2e of "
+               "biogenic carbon in use. Reused components count as zero upfront carbon under "
+               "Toronto Green Standard v4. See Policy & carbon.")
 
     st.markdown("#### National view: spec-ready reusable lumber by CMA (base year)")
     map_df = summary.merge(
@@ -344,7 +353,8 @@ if page == "Overview":
         top = summary.head(10).copy()
         top["spec_ready"] = top["spec_ready_bf"].map(fmt_bf)
         top["value/yr"] = top["value_cad"].map(fmt_cad)
-        st.dataframe(top[["cma", "coverage_tier", "spec_ready", "value/yr"]],
+        top["confidence"] = top["coverage_tier"].map(TIER_CONFIDENCE).map(lambda v: f"{v}/100")
+        st.dataframe(top[["cma", "coverage_tier", "confidence", "spec_ready", "value/yr"]],
                      width="stretch", hide_index=True)
     with colB:
         st.markdown("**Top markets by reclaimed value**")
@@ -759,6 +769,111 @@ if page == "Demand gaps":
                "population (StatCan 2021 Census, Table 98-10-0014). Coverage is local spec-ready "
                "supply divided by allocated local demand. Demand exceeds supply in nearly every "
                "market, which is the core finding: the binding constraint is supply, not appetite.")
+
+
+# --------------------------------------------------------------------------- #
+# Policy & capacity (third named gap)
+# --------------------------------------------------------------------------- #
+if page == "Policy & capacity":
+    st.subheader("Policy ambition against recovery capacity")
+    st.markdown("The third gap the brief names: municipalities with ambitious circular goals but "
+                "limited operational capacity. Each metro's construction-specific policy ambition "
+                "is scored 0-3 from documented programs, then set against the recovery and "
+                "processing firms in its province and its spec-ready supply.")
+
+    prov_smes = ecosystem.province_company_estimate()
+    med_supply = data["summary"]["spec_ready_bf"].median()
+    rows = []
+    for _, r in data["summary"].iterrows():
+        cma = r["cma"]; prov = ecosystem.CMA_PROVINCE.get(cma, "")
+        score, label, initiative, src = policy.policy_for(cma, prov)
+        smes = prov_smes.get(prov, 0)
+        per_firm = r["spec_ready_bf"] / smes if smes else float("inf")
+        if score >= 2 and per_firm > 60_000:
+            flag = "Ambition ahead of capacity"
+        elif score >= 2:
+            flag = "Aligned: policy and capacity"
+        elif r["spec_ready_bf"] >= med_supply:
+            flag = "Policy opportunity: supply, weak policy"
+        else:
+            flag = "Early: low policy, low supply"
+        rows.append({"cma": cma, "province": prov, "score": score,
+                     "policy": f"{score}/3 {label}", "province_firms": smes,
+                     "spec_ready_bf": r["spec_ready_bf"], "flag": flag,
+                     "initiative": initiative, "source": src})
+    pol = pd.DataFrame(rows)
+
+    p1, p2, p3 = st.columns(3)
+    p1.metric("Aligned leaders", int((pol["flag"].str.startswith("Aligned")).sum()))
+    p2.metric("Policy opportunities", int((pol["flag"].str.startswith("Policy opportunity")).sum()))
+    p3.metric("Ambition ahead of capacity", int((pol["flag"] == "Ambition ahead of capacity").sum()))
+
+    fig = px.scatter(pol, x="score", y="province_firms", size="spec_ready_bf", color="flag",
+                     hover_name="cma", size_max=34,
+                     labels={"score": "policy ambition (0-3)",
+                             "province_firms": "in-province recovery firms", "flag": ""})
+    fig.update_layout(legend=dict(orientation="h", y=1.16))
+    style_chart(fig, 380)
+    st.plotly_chart(fig, width="stretch")
+
+    show = pol.sort_values(["score", "spec_ready_bf"], ascending=[False, False]).copy()
+    show["spec-ready"] = show["spec_ready_bf"].map(fmt_bf)
+    st.dataframe(show[["cma", "policy", "province_firms", "spec-ready", "flag"]],
+                 width="stretch", hide_index=True)
+
+    st.markdown("#### Documented initiatives (leaders)")
+    lead = pol[pol["score"] >= 2].sort_values("score", ascending=False)
+    st.dataframe(lead[["cma", "policy", "initiative", "source"]].drop_duplicates("cma"),
+                 width="stretch", hide_index=True)
+    st.caption("Most metros sit in 'policy opportunity': real recoverable supply with little "
+               "construction-specific circular policy. The leaders (Vancouver, Toronto) pair policy "
+               "with capacity. Scores come from documented programs; where no local by-law is "
+               "documented a metro defaults to its provincial signal. Federal backdrop: Canada "
+               "Green Buildings Strategy (2024) addresses embodied carbon.")
+
+
+# --------------------------------------------------------------------------- #
+# Embodied carbon
+# --------------------------------------------------------------------------- #
+if page == "Embodied carbon":
+    st.subheader("Embodied carbon avoided by reuse")
+    st.markdown("Reusing reclaimed lumber instead of buying new avoids manufacturing emissions and "
+                "keeps biogenic carbon locked in service. This ties the supply estimate to "
+                "municipal embodied-carbon goals.")
+
+    spec = data["summary"]["spec_ready_bf"].sum()
+    av = carbon.avoided_production_t(spec); bio = carbon.biogenic_stored_t(spec)
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Avoided manufacturing", f"{av:,.0f} t CO2e/yr", "not making new lumber", delta_color="off")
+    c2.metric("Biogenic carbon kept in use", f"{bio:,.0f} t CO2e/yr", "vs landfill or burning", delta_color="off")
+    c3.metric("Total climate benefit", f"{av + bio:,.0f} t CO2e/yr", delta_color="off")
+    st.info(f"Toronto Green Standard v4 lets reused or salvaged components count as zero upfront "
+            f"embodied carbon against its {carbon.TGS_TIER2_CAP} (Tier 2) and {carbon.TGS_TIER3_CAP} "
+            "(Tier 3) kg CO2e/m2 caps, so reclaimed lumber directly helps projects meet the cap.")
+
+    st.markdown("#### Carbon benefit by market")
+    cb = data["summary"][["cma", "spec_ready_bf"]].copy()
+    cb["avoided_t"] = cb["spec_ready_bf"].map(carbon.avoided_production_t)
+    cb["stored_t"] = cb["spec_ready_bf"].map(carbon.biogenic_stored_t)
+    cb = cb.sort_values("avoided_t", ascending=False)
+    fig = px.bar(cb.head(12), x="avoided_t", y="cma", orientation="h",
+                 labels={"avoided_t": "t CO2e/yr avoided (manufacturing)", "cma": ""})
+    fig.update_traces(marker_color=ACCENT)
+    fig.update_layout(yaxis=dict(autorange="reversed"))
+    style_chart(fig, 420)
+    st.plotly_chart(fig, width="stretch")
+
+    show = cb.copy()
+    show["spec-ready"] = show["spec_ready_bf"].map(fmt_bf)
+    show["avoided (t CO2e/yr)"] = show["avoided_t"].map(lambda x: f"{x:,.0f}")
+    show["biogenic kept (t CO2e/yr)"] = show["stored_t"].map(lambda x: f"{x:,.0f}")
+    st.dataframe(show[["cma", "spec-ready", "avoided (t CO2e/yr)", "biogenic kept (t CO2e/yr)"]],
+                 width="stretch", hide_index=True)
+    st.caption("Coefficients: avoided manufacturing 62 kg CO2e/m3 and biogenic carbon 785 kg "
+               "CO2e/m3 of softwood lumber (Athena Institute CtoG LCA, 2018; Review of Canadian "
+               "harvested-wood-product emission factors, 2024), at 0.00236 m3 per board foot. "
+               "Displacement check: about 280 kg CO2e/tonne avoided by reuse (UK Forest Research, "
+               "2025).")
 
 
 # --------------------------------------------------------------------------- #
