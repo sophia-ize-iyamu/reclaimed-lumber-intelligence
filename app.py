@@ -24,7 +24,7 @@ from config import assumptions as A
 from config import cmas as cma_cfg
 from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem
 from config.assumptions import val
-from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty
+from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty, demand_registry
 
 st.set_page_config(page_title="Reclaimed Lumber Intelligence | CCC",
                    layout="wide", page_icon="🪵")
@@ -252,7 +252,7 @@ NAV = [
     ("Demand", ["Demand segments", "Demand drivers", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps", "Demand gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
-    ("Platform", ["Platform roadmap", "Projects", "Matchmaking"]),
+    ("Platform", ["Platform roadmap", "Projects", "Demand registry", "Matchmaking"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
@@ -1156,12 +1156,14 @@ if page == "Platform roadmap":
         ("Phase 1", "0 to 6 months", "Widen real coverage",
          "Add machine-readable permit feeds (Vancouver, Ottawa, Calgary, Hamilton) behind the same "
          "schema. Coverage tiers climb and confidence bands tighten on their own."),
-        ("Phase 2", "6 to 18 months", "Project intake and verified actors",
-         "Open the project store to contractors to register sites; verify the processor, warehouse "
-         "and buyer directory. Gap analysis runs on real infrastructure data."),
-        ("Phase 3", "18 months and beyond", "Live matchmaking",
-         "Notify the nearest processor and buyer when a high-yield demolition is permitted, and let "
-         "them claim the material. The coordination platform the brief envisions."),
+        ("Phase 2", "6 to 18 months", "Two-sided intake and verified actors",
+         "Open the project store to contractors to register sites, and the demand registry to buyers "
+         "to post standing wants. Verify the processor, warehouse and buyer directory. Both sides of "
+         "the match are now logged."),
+        ("Phase 3", "18 months and beyond", "Live two-sided matchmaking",
+         "When a high-yield demolition is permitted, notify the nearest processor and the buyers who "
+         "want that grade, and let them claim the material. The coordination platform the brief "
+         "envisions."),
     ]
     xs = [16, 196, 376, 556]
     nodes = ""
@@ -1205,6 +1207,8 @@ if page == "Platform roadmap":
          "Why": "Write a connector where a municipality publishes open data. Do not rebuild the municipal system."},
         {"Capability": "Forecasting and gap-analysis engine", "Call": "Build",
          "Why": "The method is the differentiator. Keep it in house and transparent."},
+        {"Capability": "Project and demand registries (supply and buyer intake)", "Call": "Build",
+         "Why": "Logging both sides is what makes matching possible. The two registries are CCC's, not a vendor's."},
         {"Capability": "Matchmaking marketplace", "Call": "Partner",
          "Why": "Material-exchange marketplaces exist. Send them supply signals instead of rebuilding a marketplace."},
         {"Capability": "Hosting and identity", "Call": "Partner",
@@ -1219,8 +1223,8 @@ if page == "Platform roadmap":
                    "demolition and housing tables.")
     with i2:
         st.markdown("**Internal**")
-        cap("The assumptions registry and project store let CCC and partners correct and "
-                   "extend the model without touching code.")
+        cap("The assumptions registry, project store and demand registry let CCC, contractors and "
+                   "buyers correct and extend the model without touching code.")
     with i3:
         st.markdown("**Outbound**")
         cap("A read API over the forecast and gap tables lets municipalities, funders and "
@@ -1289,14 +1293,59 @@ if page == "Projects":
 
 
 # --------------------------------------------------------------------------- #
+# Demand registry (buyer-side store, mirror of the project store)
+# --------------------------------------------------------------------------- #
+if page == "Demand registry":
+    st.subheader("Demand registry: log what a buyer wants")
+    st.markdown("The buyer-side mirror of the project store. Projects log supply (demolition "
+                "sites); this logs demand, so matchmaking has both sides. A teardown is a real "
+                "match only when a buyer wants that grade, in that metro, on that timeline.")
+    with st.form("add_demand"):
+        c1, c2, c3 = st.columns(3)
+        buyer = c1.text_input("Buyer / organization", "Sample design studio")
+        btype = c2.selectbox("Buyer type", demand_registry.BUYER_TYPES)
+        dcma = c3.selectbox("Metro (CMA)", cma_cfg.cma_names())
+        c4, c5, c6 = st.columns(3)
+        grade = c4.selectbox("Grade wanted", ["high", "medium", "low"],
+                             format_func=lambda g: demand_registry.GRADE_LABEL[g])
+        volume = c5.number_input("Annual volume wanted (bf)", 100.0, 5_000_000.0, 25000.0, 100.0)
+        timeline = c6.selectbox("Timeline", demand_registry.TIMELINES)
+        premium = st.slider("Max premium over virgin (%)", 0, 100, 30, 5)
+        submitted = st.form_submit_button("Save buyer want")
+    if submitted:
+        rec = demand_registry.add_demand({
+            "buyer": buyer, "buyer_type": btype, "cma": dcma, "grade_pref": grade,
+            "volume_bf": volume, "timeline": timeline, "max_premium_pct": premium})
+        st.success(f"Saved want #{rec['id']}: {buyer} in {dcma}")
+    ddf = demand_registry.demand_dataframe()
+    if len(ddf):
+        st.markdown("**Registered buyer wants**")
+        show = ddf.copy()
+        show["volume_bf"] = show["volume_bf"].map(fmt_bf)
+        show["max_premium_pct"] = show["max_premium_pct"].map(
+            lambda v: f"{v:.0f}%" if v is not None else "n/a")
+        show["grade_pref"] = show["grade_pref"].map(lambda g: demand_registry.GRADE_LABEL.get(g, g))
+        st.dataframe(show, width="stretch", hide_index=True)
+        if st.button("Clear all registered demand"):
+            demand_registry.clear_demand()
+            st.rerun()
+    else:
+        st.info("No buyer demand registered yet. Add one above, or matchmaking will fall back to "
+                "predicted demand from the market model.")
+    cap("Confidence and limits: registered wants are user-entered. Where none exist for a metro, "
+        "matchmaking uses predicted demand (national legal-today demand allocated by population and "
+        "split across applications), labelled as predicted.")
+
+
+# --------------------------------------------------------------------------- #
 # Matchmaking (Phase-2 demonstrator)
 # --------------------------------------------------------------------------- #
 if page == "Matchmaking":
-    st.subheader("Matchmaking (prototype)")
-    cap("Phase-2 demonstrator. It shows how a specific demolition routes to nearby recovery "
-               "and reuse firms, a working proof of the mechanic on the real ECCC directory, not a "
-               "live commercial exchange. CCC's role is to send this signal to operators and partner "
-               "marketplaces, rather than to run a marketplace.")
+    st.subheader("Matchmaking (two-sided prototype)")
+    cap("A specific teardown routes to nearby recovery and reuse firms (the supply side) and to "
+               "buyers who want that grade in that metro (the demand side, registered or predicted). "
+               "It proves the mechanic on the real ECCC directory and the demand registry, not a live "
+               "commercial exchange. CCC's role is to coordinate the match, not to run a marketplace.")
 
     stored = projects.projects_dataframe()
     opts = ["Quick entry"] + (["From the project store"] if not stored.empty else [])
@@ -1344,10 +1393,23 @@ if page == "Matchmaking":
                    "the material, then remanufacture and resale. Province match from the ECCC "
                    "directory (September 2024).")
 
+    st.markdown(f"#### Matched buyers in {site['cma']} (teardown grade: {res['value_tier']})")
+    bm = demand_registry.buyer_matches(site["cma"], res["value_tier"])
+    if bm.empty:
+        st.warning("No registered or predicted demand for this metro yet.")
+    else:
+        bshow = bm.copy()
+        bshow["annual want (bf)"] = bshow["annual want (bf)"].map(fmt_bf)
+        st.dataframe(bshow, width="stretch", hide_index=True)
+        n_reg = int((bm["source"] == "registered").sum())
+        cap(f"The demand side of the match: {n_reg} registered want(s) for this metro, plus "
+            "predicted demand from the market model where the registry is thin. Ranked by grade fit "
+            "to the teardown, registered buyers first. Add real buyers in the Demand registry.")
+
     if st.button("Register interest (prototype)"):
         rec = projects.add_project(site, reg)
         st.success(f"Logged to the project store as entry #{rec['id']}. On a persistent backend this "
-                   "would notify the matched firms; on the shared cloud demo the store is "
+                   "would notify the matched firms and buyers; on the shared cloud demo the store is "
                    "session-only.")
 
 
