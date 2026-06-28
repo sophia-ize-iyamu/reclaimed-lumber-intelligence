@@ -22,7 +22,7 @@ import streamlit as st
 
 from config import assumptions as A
 from config import cmas as cma_cfg
-from config import companies, demand, carbon, policy
+from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem
 from config.assumptions import val
 from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty
 
@@ -249,7 +249,7 @@ st.sidebar.caption("Circular Construction Canada")
 NAV = [
     ("", ["Overview"]),
     ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty"]),
-    ("Demand", ["Demand segments", "Economics"]),
+    ("Demand", ["Demand segments", "Demand drivers", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps", "Demand gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
     ("Platform", ["Platform roadmap", "Projects", "Matchmaking"]),
@@ -695,12 +695,47 @@ if page == "Ecosystem":
                 "reclaimed-lumber warehousing is sparse, which is why storage and standards rank "
                 "among the bottlenecks. A verified warehouse and capacity registry is a Phase-2 build.")
 
+    st.markdown("#### The demand side of the ecosystem")
+    st.markdown("The value chain above is the supply half. The buyers and channels that absorb "
+                "reclaimed wood are the demand half, and they were missing from the map. This is who "
+                "pulls material through, how it reaches them, and what holds demand back.")
+    da = pd.DataFrame(demand_ecosystem.DEMAND_ACTORS,
+                      columns=["actor", "kind", "role", "scale", "source"])
+    st.markdown("**Who buys, and the channels that reach them**")
+    st.dataframe(da.rename(columns={"actor": "buyer / channel"}),
+                 width="stretch", hide_index=True)
+    cap("Mass-timber manufacturers are marked adjacent: they buy new engineered feedstock, so they "
+        "are a demand signal for wood but not for reclaimed today.")
+
+    cda, cdb = st.columns(2)
+    with cda:
+        st.markdown("**Material-exchange channels**")
+        st.dataframe(pd.DataFrame(demand_ecosystem.EXCHANGES, columns=["Channel", "Role", "Source"]),
+                     width="stretch", hide_index=True)
+        cap("These are why the app coordinates supply to buyers rather than running a marketplace: "
+            "the marketplaces already exist.")
+    with cdb:
+        st.markdown("**Coordinators connecting the two sides**")
+        st.dataframe(pd.DataFrame(demand_ecosystem.COORDINATORS,
+                                  columns=["Organization", "Role", "Source"]),
+                     width="stretch", hide_index=True)
+        cap("The connective layer between salvage supply and local buyers.")
+
+    st.markdown("**Why buyers default to new lumber**")
+    st.dataframe(pd.DataFrame(demand_ecosystem.DEMAND_BARRIERS,
+                              columns=["Barrier", "Detail", "Source"]),
+                 width="stretch", hide_index=True)
+    cap("The top barrier is the missing re-grading and certification path for structural reuse, "
+        "which caps the largest demand tier before economics apply.")
+
     st.markdown("#### Sector capacity context")
     st.dataframe(pd.DataFrame(companies.SECTOR_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
-    cap("Confidence and limits: the firm directory and the national SME census are real and "
-               "dated, so the ecosystem map is solid. Per-market capacity in the gap analyses is the "
-               "census allocated to provinces, so it is directional, not a verified per-site audit.")
+    cap("Confidence and limits: the supply-side firm directory and the national SME census are "
+               "real and dated, so that half of the map is solid. The demand-side actors are real "
+               "organizations and sourced market structure; some scale figures are approximate. "
+               "Per-market capacity in the gap analyses is the census allocated to provinces, so it "
+               "is directional, not a verified per-site audit.")
 
 
 
@@ -774,11 +809,81 @@ if page == "Demand segments":
     st.markdown("#### Market context")
     st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
-    cap("Confidence and limits: segment volumes are bottom-up board-foot estimates shown as "
-               "ranges, calibrated to the market structure above, not a transaction dataset. They "
-               "are less precise than the supply model, which carries Monte Carlo bands. The "
-               "economics figures (premiums, salvage value) are directly sourced.")
+    cap("Confidence and limits: these segment volumes are bottom-up board-foot estimates shown as "
+               "ranges, calibrated to the market structure above. The forces around them, the "
+               "application mix, macro and policy drivers, certification levers and the buyer "
+               "ecosystem, are separately sourced. See Demand drivers and Ecosystem.")
 
+
+# --------------------------------------------------------------------------- #
+# Demand drivers
+# --------------------------------------------------------------------------- #
+if page == "Demand drivers":
+    st.subheader("Demand drivers: what pulls reclaimed wood through the market")
+    st.markdown("The segments page sizes demand from the bottom up. This page gives it the same "
+                "depth the supply side has: where demand sits by application, the macro and policy "
+                "forces pulling it, the certification mechanisms specifiers respond to, the "
+                "competitive substitute, and what buyers pay.")
+
+    st.markdown("#### Macro drivers")
+    md = demand_drivers.MACRO_DRIVERS
+    g1, g2, g3 = st.columns(3)
+    g1.metric("NA green buildings", "US$204B", "to US$377B by 2030", delta_color="off")
+    g2.metric("Wellness real estate", "US$584B", "to US$1.1T by 2029", delta_color="off")
+    g3.metric("Green-building growth", "10.6%/yr", "vs general construction", delta_color="off")
+    st.dataframe(pd.DataFrame(md, columns=["Driver", "Value", "Why it matters", "Source"]),
+                 width="stretch", hide_index=True)
+    cap("Reclaimed wood rides demand-pull from large, fast-growing green and wellness building "
+        "markets, not just from its own niche.")
+
+    st.markdown("#### Demand by application")
+    am = demand_drivers.APPLICATION_MIX
+    amdf = pd.DataFrame(am, columns=["application", "mid", "range", "note", "source"])
+    fig = px.bar(amdf, x="mid", y="application", orientation="h",
+                 labels={"mid": "indicative share of demand (%)", "application": ""})
+    fig.update_traces(marker_color=ACCENT)
+    fig.update_layout(yaxis=dict(autorange="reversed"))
+    style_chart(fig, 300)
+    st.plotly_chart(fig, width="stretch")
+    st.dataframe(amdf[["application", "range", "note", "source"]].rename(
+        columns={"range": "observed range"}), width="stretch", hide_index=True)
+    cap("Furniture and flooring lead. Shares come from market-research firms that disagree "
+        "firm-to-firm, so the bars are reconciled midpoints and the table shows the observed range. "
+        "End-use skews commercial today (about 58%), with residential growing faster (Grand View, 2022).")
+
+    st.markdown("#### Policy and procurement pull (Canada)")
+    st.markdown("The structural demand engine. Embodied-carbon procurement and codes increasingly "
+                "favour reused material, which counts as zero or low upfront carbon.")
+    pol = pd.DataFrame(demand_drivers.POLICY_DEMAND,
+                       columns=["Driver", "Jurisdiction", "Status", "When", "Detail", "Source"])
+    st.dataframe(pol, width="stretch", hide_index=True)
+    cap("In force items create demand today; direction-setting items signal where it is heading. "
+        "Toronto's top tier becomes mandatory for all new development by 2028.")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("#### Why specifiers choose it")
+        st.dataframe(pd.DataFrame(demand_drivers.CERT_LEVERS,
+                                  columns=["Lever", "Mechanism", "Source"]),
+                     width="stretch", hide_index=True)
+        cap("LEED v4.1 counts reused material at 200% of its cost, a concrete reason architects "
+            "specify reclaimed wood.")
+    with c2:
+        st.markdown("#### The competitive substitute")
+        st.dataframe(pd.DataFrame(demand_drivers.SUBSTITUTE,
+                                  columns=["Indicator", "Value", "Note", "Source"]),
+                     width="stretch", hide_index=True)
+        cap("The threat to real wood is wood-look vinyl, not virgin lumber. Reclaimed defends a "
+            "premium-aesthetic position the look-alikes cannot copy.")
+
+    st.markdown("#### What buyers pay")
+    st.dataframe(pd.DataFrame(demand_drivers.PRICE_POINTS,
+                              columns=["Item", "Value", "Note", "Source"]),
+                 width="stretch", hide_index=True)
+    cap("Confidence and limits: macro, policy, certification and substitute figures are from "
+        "government, standards bodies and trade-press primary reporting and are firm. Application "
+        "shares and reclaimed pricing are market-research and supplier estimates, so they read as "
+        "ranges, not precise values.")
 
 
 # --------------------------------------------------------------------------- #

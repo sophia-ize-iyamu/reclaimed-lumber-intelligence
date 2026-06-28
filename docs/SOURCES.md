@@ -82,6 +82,40 @@ Corrections from the June 2026 source review are listed at the end.
 - Outdated-price fix: the WoodWeb antique-beam figure is from **2010**; current prices now come from Green Mission (Feb 2026); Aurora Mills (Jan 2023) retained but flagged as aging.
 - Note: NAHB now sources **Madison's Lumber Price Index** (not Random Lengths) and publishes percentage change only.
 
+## Demand drivers and demand-side ecosystem (added June 2026)
+
+Added to close the supply/demand asymmetry. Market-research application shares and
+reclaimed pricing disagree firm-to-firm and are shown as ranges. Government,
+standards-body, and trade-press rows are firmer.
+
+| Item | Value | Source | Date | URL | Notes |
+|---|---|---|---|---|---|
+| NA green buildings market | US$204B (2024) to US$377B (2030), 10.6%/yr | Mordor Intelligence, North America Green Buildings Market | 2025 | https://www.mordorintelligence.com/industry-reports/north-america-green-buildings-market | Macro demand driver |
+| Wellness real estate market | US$584B (2024) to US$1.1T (2029) | Global Wellness Institute, Build Well to Live Well | 2025 | https://globalwellnessinstitute.org/press-room/press-releases/build-well-to-live-well-2025/ | Biophilic demand; WELL v2 |
+| Wellness building premium | 10-25% residential, 4.4-7.7% commercial rent | Global Wellness Institute | 2025 | https://globalwellnessinstitute.org/press-room/press-releases/build-well-to-live-well-2025/ | Willingness to pay |
+| Reclaimed application mix | Furniture 31-41% (largest); flooring fastest-growing | Grand View Research; Precedence Research; Market Research Future | 2022-2025 | https://www.grandviewresearch.com/industry-analysis/reclaimed-lumber-market | Vendor estimates; ranges |
+| End-use split | Commercial about 58% (2022) | Grand View Research | 2022 | https://www.grandviewresearch.com/industry-analysis/reclaimed-lumber-market | Residential faster-growing |
+| Flooring segment growth | about US$22.5B by 2030 at 3.7%/yr | Global Industry Analysts via Research and Markets | Feb 2025 | https://www.globenewswire.com/news-release/2025/02/28/3034812/28124/en/Reclaimed-Lumber-Industry-Business-Report-2025.html | |
+| Federal Standard on Embodied Carbon | 10% cut on concrete, federal projects >=$10M and >100 m3 | Treasury Board of Canada Secretariat | Dec 2022 | https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=32814 | In force |
+| Standard expanded to steel and whole-building LCA | Effective Sept 1, 2025 | Treasury Board, Contracting Policy Notice 2025-6 | 2025 | https://www.canada.ca/en/treasury-board-secretariat/services/policy-notice/2025-6.html | In force |
+| Federal building embodied-carbon target | 30% cut or max within 2% cost premium, buildings >2,000 m2 | NRCan, Canada Green Buildings Strategy | Jul 2024 | https://natural-resources.canada.ca/energy-efficiency/building-energy-efficiency/canada-green-buildings-strategy | Verify verbatim |
+| Toronto Green Standard v4 | Caps 350/250 kg CO2e/m2; reused = zero upfront; top tier mandatory by 2028 | City of Toronto; Daily Commercial News | 2022-2023 | https://canada.constructconnect.com/dcn/news/resource/2023/07/climate-and-construction-toronto-green-standard-v4-tackles-embodied-carbon-in-materials | |
+| Vancouver Building By-law embodied carbon | 10% cut (Jan 1, 2025); 20% for 1-6 storey wood | City of Vancouver; Carbon Leadership Forum BC | 2025 | https://clfbritishcolumbia.com/embodied-carbon-in-vancouver-building-bylaw-2025/ | Partial delay for smaller buildings |
+| National Building Code 2025 GHG objective | Adds a GHG-emissions objective | NRC Codes Canada | 2025 | https://nrc-publications.canada.ca/eng/view/object/?id=adf1ad94-7ea8-4b08-a19f-653ebb7f45f6 | Direction-setting |
+| Landfill Methane Regulations | 50% cut below 2019 by 2030 | Canada Gazette Part 2, SOR/2025-279 | Dec 2025 | https://gazette.gc.ca/rp-pr/p2/2025/2025-12-31/html/sor-dors279-eng.html | Raises landfill-diversion value |
+| Zero Carbon Building Design Standard v4 | Scores embodied carbon, not only operations | Canada Green Building Council | Jun 2024 | https://www.cagbc.org/news-resources/technical-documents/zcb-design-standard-v4/ | |
+| LEED v4.1 reused-material incentive | Reused counted at 200% of cost; up to 5 pts reuse | USGBC, LEED v4.1 Materials and Resources | current | https://leeduser.buildinggreen.com/ | Specifier mechanism |
+| Quebec mass timber and wood-first | 18 storeys (2025); consider wood first | Quebec MRNF; Regie du batiment du Quebec | 2025 | https://mechanicalbusiness.com/2025/07/25/quebec-authorizes-mass-timber-buildings-to-18-storeys/ | |
+| Canadian mass-timber market | $379M (2023) to $1.2B (2030) to $2.4B (2035) | Mass Timber Roadmap (Transition Accelerator, FPAC, CWC) | Jun 2024 | https://transitionaccelerator.ca/wp-content/uploads/2024/06/MT_Roadmap_Digital_vf.pdf | Adjacent demand signal |
+| Competitive substitute (wood-look LVT) | Hardwood share 23.4% (2015) to 12.6% (2024); 69% name vinyl top threat | Floor Covering News | 2025 | https://www.fcnews.net/2025/07/hardwood-stats-segment-cedes-share-but-high-end-hangs-tough/ | |
+| Reclaimed pricing | Flooring about US$10-20/sq ft raw vs $3-7 new; processing 2-10x; furniture 15-30% premium | Supplier and trade estimates; IndexBox | 2024-2026 | https://www.reallycheapfloors.com/blog/reclaimed-hardwood-flooring-cost/ | Indicative |
+| Habitat ReStore scale | 100+ stores, over 1B lbs diverted, about $80M network | Habitat for Humanity Canada; Retail-Insider | 2022-2024 | https://habitat.ca/en/restore | Demand-side retail |
+| Unbuilders and Heritage Lumber | 99.2% single-family salvage rate | The Construction Source | 2023 | https://www.theconstructionsource.ca/2023/06/01/unbuilders/ | Broker archetype |
+| BMEx / Light House / Rheaply | Free B2B material exchange on Rheaply | Light House; ConstructConnect | 2024 | https://www.light-house.org/bmex/ | Coordinate, not run a marketplace |
+| Structural reuse barrier | Salvaged lumber must be re-graded; no Canadian code path | ECCC circularity-of-wood workshop report | Feb 2024 | https://www.canada.ca/en/services/environment/conservation/sustainability/circular-economy/workshop-report-opportunities-circularity-wood-construction-renovation-demolition.html | Top demand barrier |
+| Structural-timber reuse barriers | Certification gap, unknown provenance | Taylor and Francis review | 2025 | https://www.tandfonline.com/doi/full/10.1080/17480272.2025.2517186 | Peer-reviewed |
+| Architect and designer count | Over 5,000 registered architects (approximate) | RAIC Vital Statistics; Interior Designers of Canada | 2024-2025 | https://chop.raic.ca/appendix-c-vital-statistics-provincial-and-territorial-associations-of-architects | Specifier channel; approximate |
+
 ## Bundled source PDFs (docs/sources/)
 
 ECCC company directory; ECCC material-flow chart; ECCC stakeholders infographic;
