@@ -71,13 +71,13 @@ st.markdown("""
 
 /* Colours follow the operating system light/dark setting via prefers-color-scheme */
 :root {
-  --app-bg:#FBFAF6; --side-bg:#EEF2EC; --card-bg:#FFFFFF;
+  --app-bg:#FFFFFF; --side-bg:#EEF2EC; --card-bg:#FFFFFF;
   --muted:#5C5C54; --rule:#E2E7DE; --head:#14532D;
   --gold:#4DB779; --gold-text:#2F7D4F;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --app-bg:#0A0A0D; --side-bg:#101310; --card-bg:rgba(77,183,121,0.08);
+    --app-bg:#000000; --side-bg:#101310; --card-bg:rgba(77,183,121,0.08);
     --muted:#9A9A92; --rule:rgba(77,183,121,0.22); --head:#EAF3EC;
     --gold:#4DB779; --gold-text:#5CCF95;
   }
