@@ -43,7 +43,7 @@ def style_chart(fig, height=340, **layout):
     """Transparent background and neutral text/grid that read on light or dark."""
     fig.update_layout(height=height, margin=dict(l=8, r=14, t=12, b=10),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(family="Inter, system-ui, sans-serif", color="#8B8D90"),
+                      font=dict(family="Inter, system-ui, sans-serif", color="#5F6368"),
                       template="none", **layout)
     # automargin reserves room for tick labels and axis titles so neither lands
     # on the plot; title_standoff keeps the axis title clear of the ticks.
@@ -72,7 +72,7 @@ st.markdown("""
 /* Colours follow the operating system light/dark setting via prefers-color-scheme */
 :root {
   --app-bg:#FBFAF6; --side-bg:#EEF2EC; --card-bg:#FFFFFF;
-  --muted:#6B6B63; --rule:#E2E7DE; --head:#14532D;
+  --muted:#5C5C54; --rule:#E2E7DE; --head:#14532D;
   --gold:#4DB779; --gold-text:#2F7D4F;
 }
 @media (prefers-color-scheme: dark) {
@@ -108,7 +108,7 @@ div[data-testid="stMetric"] {
 }
 div[data-testid="stMetric"] label p {
   font-family: 'JetBrains Mono', 'SFMono-Regular', monospace; white-space: normal;
-  text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; font-weight: 500; opacity: 0.72;
+  text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; font-weight: 600; opacity: 0.9;
 }
 div[data-testid="stMetricValue"] {
   font-family: 'JetBrains Mono', 'SFMono-Regular', monospace; font-variant-numeric: tabular-nums;
@@ -118,6 +118,8 @@ div[data-testid="stMetricValue"] {
 button[data-baseweb="tab"] { font-size: 0.95rem; padding-top: 6px; padding-bottom: 6px; }
 /* Tables */
 div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-variant-numeric: tabular-nums; }
+/* Captions: use the muted token (darker than Streamlit's faded default) for contrast */
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p { color: var(--muted) !important; }
 
 /* Hero header */
 .hero { margin: 2px 0 4px; }
@@ -461,8 +463,10 @@ if page == "Municipal baseline":
 if page == "Hotspots & archetypes":
     st.subheader("Neighbourhood hotspots & archetype refinement")
     st.markdown("Demolition clusters in specific neighbourhoods and repeatable building "
-                "types. Toronto is the worked example. Its real permit data shows "
-                "single-family detached is about 77% of demolitions, confirming the brief.")
+                "types. Across Canada in 2022, single-detached houses were 77% of the 11,988 "
+                "dwellings permitted for demolition (StatCan); the other 23% were semi-detached, "
+                "row, and apartment or multi-unit dwellings, which yield less dimensional lumber "
+                "per teardown. Toronto, shown here with real permit data, is the worked example.")
     hotspots = pd.DataFrame([
         ("Etobicoke (Central)", 43.6435, -79.5660, 210, "sfd_postwar"),
         ("Willowdale / North York", 43.7700, -79.4100, 265, "sfd_postwar"),
@@ -492,7 +496,8 @@ if page == "Hotspots & archetypes":
                    "and archetype mix are anchored to real Toronto Open Data.")
     st.info("Post-war stick-frame homes dominate the demolition stream and carry the most "
             "reusable dimensional lumber; pre-war homes are fewer but carry higher-value "
-            "old-growth members. Targeting these archetypes raises realized yield and value.")
+            "old-growth members; modern and low-rise multi-unit buildings yield less reclaimable "
+            "lumber. Targeting the first two archetypes raises realized yield and value.")
 
 
 # --------------------------------------------------------------------------- #
@@ -894,7 +899,7 @@ if page == "Policy & capacity":
                         (0.4, 0, "Early"),
                         (2.6, 0, "Ambition ahead of capacity")]:
         fig.add_annotation(x=qx, y=qy, text=txt, showarrow=False,
-                           font=dict(size=10, color="#8B8D90"))
+                           font=dict(size=10, color="#5F6368"))
     fig.update_xaxes(range=[-0.3, 3.3], tickvals=[0, 1, 2, 3])
     fig.update_layout(legend=dict(orientation="h", y=1.18))
     style_chart(fig, 400)

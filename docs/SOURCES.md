@@ -26,10 +26,11 @@ Corrections from the June 2026 source review are listed at the end.
 | Item | Value | Source | Date | URL | Notes |
 |---|---|---|---|---|---|
 | National residential demolition rate; per-CMA counts | 0.74 / 1,000 dwellings/yr | StatCan, "Boom goes the dynamite...and conversions" | Jun 20, 2023 (2022 data) | https://www.statcan.gc.ca/o1/en/plus/3896-boom-goes-dynamiteand-conversions | |
+| Demolition by structural type (Canada, 2022) | single-detached 77.1% of 11,988 units; rest semi-detached, row, apartment/multi | StatCan, "Boom goes the dynamite...and conversions" | Jun 2023 (2022 data) | https://www.statcan.gc.ca/o1/en/plus/3896-boom-goes-dynamiteand-conversions | National figure used on Hotspots; not Toronto-specific. CMA single-detached counts: Vancouver 1,451, Toronto 1,138, Montreal 575. |
 | Dwellings by period of construction | per-CMA distributions | StatCan 2021 Census, Table 98-10-0233-01 | released Sep 21, 2022 | https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810023301 | Corrected table id (was 98-10-0234-01, which is dwelling condition by tenure). |
 | CMA population & private dwellings | per-CMA counts | StatCan 2021 Census, Table 98-10-0014-01 | released Feb 9, 2022 | https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810001401 | |
 | Wood-frame share, single-detached | 0.98 | NRCan, "Back to basics: building with wood" | modified Apr 2026 | https://natural-resources.canada.ca/stories/simply-science/back-basics-building-wood-asknrcan | |
-| Toronto demolition permits (live, by year) | ~1,277/yr, 77% single-detached | City of Toronto Open Data, Cleared Building Permits | dataset 2001-present | https://open.toronto.ca/dataset/building-permits-cleared-permits/ | Portal shows a "Retired" flag; confirm before relying. Active companion: Building Permits - Active Permits. |
+| Toronto demolition permits (live, by year) | ~1,277 cleared demolition permits/yr | City of Toronto Open Data, Cleared Building Permits | dataset 2001-present | https://open.toronto.ca/dataset/building-permits-cleared-permits/ | The 77% single-detached share is the StatCan national figure above, not Toronto-specific. Portal shows a "Retired" flag; confirm before relying. |
 
 ## Ecosystem and companies (demand-side, two-sided circularity)
 
