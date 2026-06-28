@@ -438,6 +438,7 @@ if page == "Hotspots & archetypes":
         lambda a: reg["archetypes"][a]["label"])
     colA, colB = st.columns([3, 2])
     with colA:
+        st.markdown("**Demolition hotspots (Toronto worked example)**")
         fig = px.scatter_geo(hotspots, lat="lat", lon="lon", size="annual_permits",
                              color="dominant_archetype", hover_name="neighbourhood",
                              hover_data={"annual_permits": True, "lat": False, "lon": False},
@@ -472,6 +473,7 @@ if page == "Forecast & uncertainty":
     sel = st.multiselect("CMAs to chart", cma_cfg.cma_names(),
                          default=["Toronto", "Vancouver", "Montreal", "Calgary"])
     if sel:
+        st.markdown("**Forecast to 2036: central line with P10-P90 band**")
         sub = fcast[fcast["cma"].isin(sel)]
         fig = go.Figure()
         palette = px.colors.qualitative.Safe
@@ -498,6 +500,7 @@ if page == "Forecast & uncertainty":
                "(correlated national error that doesn't diversify away), and the demolition "
                "count is sampled per CMA by coverage tier.")
 
+    st.markdown("**Per-CMA spec-ready, P50 with P10-P90 (top 12)**")
     mc = data["mc_cma"].head(12).copy()
     fig = go.Figure(go.Bar(
         x=mc["cma"], y=mc["spec_ready_p50"],
@@ -607,6 +610,7 @@ if page == "Ecosystem":
         st.dataframe(show[["name", "province", "activities", "stages", "website"]],
                      width="stretch", hide_index=True, height=360)
     with colB:
+        st.markdown("**Companies by province**")
         prov_counts = comp.groupby("province").size().reset_index(name="companies")
         prov_counts["lat"] = prov_counts["province"].map(lambda p: companies.PROVINCE_CENTROID[p][0])
         prov_counts["lon"] = prov_counts["province"].map(lambda p: companies.PROVINCE_CENTROID[p][1])
@@ -693,6 +697,7 @@ if page == "Demand segments":
     fig.update_layout(yaxis=dict(autorange="reversed"), legend=dict(orientation="h", y=1.08))
     style_chart(fig, 460)
     st.plotly_chart(fig, width="stretch")
+    st.markdown("**Segment detail**")
     seg_tbl = dem.copy()
     seg_tbl["absorption"] = seg_tbl.apply(lambda r: f"{fmt_bf(r['low_bf'])} - {fmt_bf(r['high_bf'])}", axis=1)
     seg_tbl["tier"] = seg_tbl["tier"].map({"A": "legal today", "B": "needs code change"})
@@ -756,6 +761,7 @@ if page == "Demand gaps":
     dm2.metric("Spec-ready supply (base yr)", fmt_bf(dg["spec_ready_bf"].sum()))
     dm3.metric("Markets with unmet demand", f"{unmet} of {len(dg)}")
 
+    st.markdown("**Demand vs supply by market (top 12)**")
     top = dg.head(12).melt(id_vars="cma", value_vars=["demand_bf", "spec_ready_bf"],
                            var_name="series", value_name="bf")
     top["series"] = top["series"].map({"demand_bf": "allocated demand",
@@ -767,6 +773,7 @@ if page == "Demand gaps":
     style_chart(fig, 460)
     st.plotly_chart(fig, width="stretch")
 
+    st.markdown("**All 25 markets**")
     show = dg.copy()
     show["allocated demand"] = show["demand_bf"].map(fmt_bf)
     show["spec-ready supply"] = show["spec_ready_bf"].map(fmt_bf)
@@ -817,6 +824,7 @@ if page == "Policy & capacity":
     p2.metric("Policy opportunities", int((pol["flag"].str.startswith("Policy opportunity")).sum()))
     p3.metric("Ambition ahead of capacity", int((pol["flag"] == "Ambition ahead of capacity").sum()))
 
+    st.markdown("**Policy ambition vs in-province capacity**")
     fig = px.scatter(pol, x="score", y="province_firms", size="spec_ready_bf", color="flag",
                      hover_name="cma", size_max=34,
                      labels={"score": "policy ambition (0-3)  ->",
@@ -835,6 +843,7 @@ if page == "Policy & capacity":
     style_chart(fig, 400)
     st.plotly_chart(fig, width="stretch")
 
+    st.markdown("**All metros**")
     show = pol.sort_values(["score", "spec_ready_bf"], ascending=[False, False]).copy()
     show["spec-ready"] = show["spec_ready_bf"].map(fmt_bf)
     st.dataframe(show[["cma", "policy", "province_firms", "spec-ready", "flag"]],
@@ -886,6 +895,7 @@ if page == "Embodied carbon":
     style_chart(fig, 420)
     st.plotly_chart(fig, width="stretch")
 
+    st.markdown("**Detail by market**")
     show = cb.copy()
     show["spec-ready"] = show["spec_ready_bf"].map(fmt_bf)
     show["avoided (t CO2e/yr)"] = show["avoided_t"].map(lambda x: f"{x:,.0f}")
@@ -1172,6 +1182,7 @@ if page == "Sources & void":
     void = data["void"].copy()
     void["confidence_band_pm"] = void["confidence_band_pm"].map(lambda x: f"+/- {x*100:.0f}%")
     st.dataframe(void, width="stretch", hide_index=True)
+    st.markdown("**Coverage tiers across the 25 CMAs**")
     tier_counts = data["void"]["coverage_tier"].value_counts().reset_index()
     tier_counts.columns = ["coverage_tier", "cma_count"]
     fig = px.bar(tier_counts, x="coverage_tier", y="cma_count", color="coverage_tier",
