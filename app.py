@@ -237,37 +237,29 @@ def cap(text):
 _IMG_DIR = os.path.join(os.path.dirname(__file__), "assets", "img")
 
 
-def banner(name, alt=""):
-    """Render a content image as a full-width rounded banner (CC0 imagery)."""
+def banner(name, alt="", max_width=None):
+    """Render a content image: full-width, or centered at max_width (CC0 imagery)."""
     p = os.path.join(_IMG_DIR, name)
     if not os.path.exists(p):
         return
     with open(p, "rb") as f:
         b = base64.b64encode(f.read()).decode()
-    st.markdown(
-        f'<img src="data:image/jpeg;base64,{b}" alt="{alt}" '
-        f'style="width:100%;border-radius:12px;margin:0.1rem 0 0.5rem;display:block" />',
-        unsafe_allow_html=True)
+    if max_width:
+        style = (f"width:{max_width};max-width:100%;border-radius:12px;"
+                 "margin:0.3rem auto 0.5rem;display:block")
+    else:
+        style = "width:100%;border-radius:12px;margin:0.1rem 0 0.5rem;display:block"
+    st.markdown(f'<img src="data:image/jpeg;base64,{b}" alt="{alt}" style="{style}" />',
+                unsafe_allow_html=True)
 
 
-def img_float(name, text, side="right", width="40%", caption=""):
-    """Float a content image to one side with the given prose wrapping around it."""
-    p = os.path.join(_IMG_DIR, name)
-    if not os.path.exists(p):
+def img_float(name, text, width="100%", caption=""):
+    """Intro text, then an image (full-width or centered). Clean, with no side gaps."""
+    if text:
         st.markdown(text)
-        return
-    with open(p, "rb") as f:
-        b = base64.b64encode(f.read()).decode()
-    mar = "0.1rem 0 0.5rem 1.1rem" if side == "right" else "0.1rem 1.1rem 0.5rem 0"
-    figcap = (f'<figcaption style="font-size:0.76rem;color:var(--muted);margin-top:0.25rem;'
-              f'line-height:1.35">{caption}</figcaption>' if caption else "")
-    fig = (f'<figure style="float:{side};width:{width};margin:{mar}">'
-           f'<img src="data:image/jpeg;base64,{b}" style="width:100%;border-radius:12px;display:block"/>'
-           f'{figcap}</figure>')
-    st.markdown(
-        f'<div style="overflow:hidden">{fig}'
-        f'<p style="font-size:0.97rem;line-height:1.55;margin:0">{text}</p></div>',
-        unsafe_allow_html=True)
+    banner(name, "", None if str(width).strip() == "100%" else width)
+    if caption:
+        cap(caption)
 
 
 TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
@@ -470,7 +462,7 @@ if page == "Municipal baseline":
     img_float("supply.jpg",
               "First-order, city-wide estimate of salvageable wood per market, built from "
               "demolition activity, real StatCan housing-stock age, and building archetype.",
-              side="right", width="38%",
+              width="78%",
               caption="Demolition is where the recoverable wood stream begins.")
     supply = data["supply"]
     sel = st.selectbox("CMA", cma_cfg.cma_names())
@@ -523,7 +515,7 @@ if page == "Hotspots & archetypes":
               "permitted for demolition (StatCan); the other 23% were semi-detached, row, and "
               "apartment or multi-unit dwellings, which yield less dimensional lumber per teardown. "
               "Toronto, shown here with real permit data, is the worked example.",
-              side="left", width="42%",
+              width="100%",
               caption="Toronto's character homes: the pre- and post-war stock that yields the most reusable lumber.")
     hotspots = pd.DataFrame([
         ("Etobicoke (Central)", 43.6435, -79.5660, 210, "sfd_postwar"),
@@ -653,7 +645,7 @@ if page == "Ecosystem":
               "recover, process, remake, retail, recycle, downcycle and upcycle it. This maps the "
               "real ecosystem from the ECCC company directory (September 2024) and the national SME "
               "census (Light House for ECCC, March 2026).",
-              side="left", width="40%",
+              width="100%",
               caption="Salvaged lumber, recovered and stacked for reuse.")
 
     comp = ecosystem.company_table()
@@ -728,18 +720,15 @@ if page == "Ecosystem":
         st.plotly_chart(fig, width="stretch")
 
     st.markdown("#### Recovery pathways (recycling, downcycling, upcycling and more)")
-    rp1, rp2 = st.columns([1.7, 1])
-    with rp1:
-        ac = ecosystem.activity_counts()
-        fig = px.bar(ac, x="companies", y="activity", orientation="h",
-                     labels={"companies": "named companies", "activity": ""})
-        fig.update_traces(marker_color=ACCENT)
-        fig.update_layout(yaxis=dict(autorange="reversed"))
-        style_chart(fig, 320)
-        st.plotly_chart(fig, width="stretch")
-    with rp2:
-        banner("workshop.jpg", "Wood processing workshop")
-        cap("Processing and remanufacturing: de-nailing, sorting and milling salvaged boards.")
+    ac = ecosystem.activity_counts()
+    fig = px.bar(ac, x="companies", y="activity", orientation="h",
+                 labels={"companies": "named companies", "activity": ""})
+    fig.update_traces(marker_color=ACCENT)
+    fig.update_layout(yaxis=dict(autorange="reversed"))
+    style_chart(fig, 320)
+    st.plotly_chart(fig, width="stretch")
+    banner("workshop.jpg", "Wood processing workshop", max_width="58%")
+    cap("Processing and remanufacturing: de-nailing, sorting and milling salvaged boards.")
 
     st.markdown("#### Storage and warehousing")
     st.markdown("Warehousing is the connective layer between recovery and reuse, and it is the "
@@ -887,14 +876,11 @@ if page == "Demand segments":
     st.dataframe(seg_tbl[["segment", "tier", "absorption", "note"]],
                  width="stretch", hide_index=True)
 
+    banner("demand.jpg", "Reclaimed wood installed in an interior", max_width="68%")
+    cap("Reclaimed wood installed in a finished interior: the demand side at work.")
     st.markdown("#### Market context")
-    mc1, mc2 = st.columns([1, 1.6])
-    with mc1:
-        banner("demand.jpg", "Reclaimed wood installed in an interior")
-        cap("Reclaimed wood installed in a finished interior: the demand side at work.")
-    with mc2:
-        st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
-                     width="stretch", hide_index=True)
+    st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
+                 width="stretch", hide_index=True)
     cap("Confidence and limits: these segment volumes are bottom-up board-foot estimates shown as "
                "ranges, calibrated to the market structure above. The forces around them, the "
                "application mix, macro and policy drivers, certification levers and the buyer "
@@ -911,7 +897,7 @@ if page == "Demand drivers":
               "the supply side has: where demand sits by application, the macro and policy forces "
               "pulling it, the certification mechanisms specifiers respond to, the competitive "
               "substitute, and what buyers pay.",
-              side="right", width="34%",
+              width="100%",
               caption="Reclaimed wood as an interior finish, the look designers and buyers specify.")
 
     st.markdown("#### Macro drivers")
@@ -1031,7 +1017,7 @@ if page == "Economics":
               "Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. This "
               "is the economics behind why so little is recovered, and the constraints that hold it "
               "back.",
-              side="right", width="34%",
+              width="72%",
               caption="Deconstruction is hands-on and slow, which raises cost but creates more jobs.")
     st.markdown("#### Economics")
     ec = demand.ECONOMICS
@@ -1175,7 +1161,7 @@ if page == "Policy & capacity":
               "limited operational capacity. Each metro's construction-specific policy ambition is "
               "scored 0 to 3 from documented programs, then set against the recovery and processing "
               "firms in its province and its spec-ready supply.",
-              side="right", width="38%",
+              width="72%",
               caption="Municipal policy sets the rules: a city hall in Ontario.")
 
     prov_smes = ecosystem.province_company_estimate()
@@ -1283,22 +1269,19 @@ if page == "Embodied carbon":
                "avoided manufacturing and biogenic carbon kept in use.")
 
     st.markdown("#### Carbon benefit by market")
-    cbc1, cbc2 = st.columns([1.7, 1])
-    with cbc1:
-        cb = data["summary"][["cma", "spec_ready_bf"]].copy()
-        cb["avoided_t"] = cb["spec_ready_bf"].map(carbon.avoided_production_t)
-        cb["stored_t"] = cb["spec_ready_bf"].map(carbon.biogenic_stored_t)
-        cb = cb.sort_values("avoided_t", ascending=False)
-        fig = px.bar(cb.head(12), x="avoided_t", y="cma", orientation="h",
-                     labels={"avoided_t": "t CO2e/yr avoided (manufacturing)", "cma": ""})
-        fig.update_traces(marker_color=ACCENT)
-        fig.update_layout(yaxis=dict(autorange="reversed"))
-        style_chart(fig, 420)
-        st.plotly_chart(fig, width="stretch")
-    with cbc2:
-        banner("carbon.jpg", "Modern wood building")
-        cap("Wood buildings count reused components as zero upfront embodied carbon "
-            "(Toronto Green Standard v4).")
+    cb = data["summary"][["cma", "spec_ready_bf"]].copy()
+    cb["avoided_t"] = cb["spec_ready_bf"].map(carbon.avoided_production_t)
+    cb["stored_t"] = cb["spec_ready_bf"].map(carbon.biogenic_stored_t)
+    cb = cb.sort_values("avoided_t", ascending=False)
+    fig = px.bar(cb.head(12), x="avoided_t", y="cma", orientation="h",
+                 labels={"avoided_t": "t CO2e/yr avoided (manufacturing)", "cma": ""})
+    fig.update_traces(marker_color=ACCENT)
+    fig.update_layout(yaxis=dict(autorange="reversed"))
+    style_chart(fig, 420)
+    st.plotly_chart(fig, width="stretch")
+    banner("carbon.jpg", "Modern wood building")
+    cap("Wood buildings count reused components as zero upfront embodied carbon "
+        "(Toronto Green Standard v4).")
 
     st.markdown("**Detail by market**")
     show = cb.copy()
