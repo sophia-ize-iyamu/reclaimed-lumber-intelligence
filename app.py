@@ -371,7 +371,6 @@ if scenario_key != "baseline":
 # Overview
 # --------------------------------------------------------------------------- #
 if page == "Overview":
-    banner("hero.jpg", "Reclaimed wood")
     st.markdown("""
     <div class="hero">
       <div class="hero-eyebrow">Circular Construction Canada</div>
@@ -382,6 +381,7 @@ if page == "Overview":
       <div class="hero-rule"></div>
     </div>
     """, unsafe_allow_html=True)
+    banner("hero.jpg", "Reclaimed wood")
     nat = data["mc_nat"]
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Gross wood content", fmt_bf(summary["gross_bf"].sum()))
@@ -449,8 +449,6 @@ if page == "Municipal baseline":
     st.markdown("First-order, city-wide estimate of salvageable wood per market, "
                 "built from demolition activity, real StatCan housing-stock age, and "
                 "building archetype.")
-    banner("supply.jpg", "Demolition site")
-    cap("Demolition is where the recoverable wood stream begins.")
     supply = data["supply"]
     sel = st.selectbox("CMA", cma_cfg.cma_names())
     rec = cma_cfg.get_cma(sel)
@@ -464,6 +462,8 @@ if page == "Municipal baseline":
     cap(("Housing-stock age: real StatCan distribution." if rec["vintage_is_real"]
                 else "Housing-stock age: calibrated profile (no CMA-specific StatCan row).")
                + f" Demolition source: {sub['source'].iloc[0]}.")
+    banner("supply.jpg", "Demolition site")
+    cap("Demolition is where the recoverable wood stream begins.")
 
     colA, colB = st.columns(2)
     with colA:
@@ -628,8 +628,6 @@ if page == "Ecosystem":
                 "that recover, process, remake, retail, recycle, downcycle and upcycle it. This maps "
                 "the real ecosystem from the ECCC company directory (September 2024) and the national "
                 "SME census (Light House for ECCC, March 2026).")
-    banner("ecosystem.jpg", "Reclaimed wood workshop")
-    cap("Recovery, processing and remanufacturing firms turn salvage into spec-ready stock.")
 
     comp = ecosystem.company_table()
     restore_count, restore_src, restore_live = data["restores"]
@@ -673,6 +671,8 @@ if page == "Ecosystem":
     cap("Firm counts are the national SME census by value-chain step (Light House, March "
                "2026). Retail dominates because it includes 102 Habitat for Humanity ReStores.")
 
+    banner("ecosystem.jpg", "Salvaged reclaimed lumber")
+    cap("The material these firms handle: salvaged lumber recovered and stacked for reuse.")
     st.markdown("#### Company directory")
     all_acts = sorted({a for c in companies.list_companies() for a in c["activities"]})
     f1, f2 = st.columns(2)
@@ -824,8 +824,6 @@ if page == "Demand segments":
     st.markdown("The supply model says how much reusable lumber appears. This answers the harder "
                 "question the feedback raised: who buys it, what it's worth, and why so much "
                 "recoverable wood still isn't reclaimed.")
-    banner("demand.jpg", "Reclaimed wood interior")
-    cap("Reclaimed wood in use: hospitality and interiors are among the largest applications.")
 
     dem = pd.DataFrame(demand.demand_table())
     spec_ready = data["summary"]["spec_ready_bf"].sum()
@@ -859,6 +857,8 @@ if page == "Demand segments":
     st.dataframe(seg_tbl[["segment", "tier", "absorption", "note"]],
                  width="stretch", hide_index=True)
 
+    banner("demand.jpg", "Reclaimed wood installed in an interior")
+    cap("Reclaimed wood installed in a finished interior: the demand side at work.")
     st.markdown("#### Market context")
     st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
@@ -994,8 +994,6 @@ if page == "Economics":
     st.markdown("Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. "
                 "This is the economics behind why so little is recovered, and the constraints that "
                 "hold it back.")
-    banner("economics.jpg", "Construction site")
-    cap("Deconstruction is labour-intensive, which raises its cost but also creates more jobs.")
     st.markdown("#### Economics")
     ec = demand.ECONOMICS
     rp = ec["reclaimed_premium"]; dp = ec["deconstruction_premium"]
@@ -1242,6 +1240,9 @@ if page == "Embodied carbon":
                "off the road for a year (US EPA: 4.6 t CO2e per vehicle per year), combining "
                "avoided manufacturing and biogenic carbon kept in use.")
 
+    banner("carbon.jpg", "Modern wood building")
+    cap("Wood buildings, where reused components count as zero upfront embodied carbon under "
+        "standards like Toronto Green Standard v4.")
     st.markdown("#### Carbon benefit by market")
     cb = data["summary"][["cma", "spec_ready_bf"]].copy()
     cb["avoided_t"] = cb["spec_ready_bf"].map(carbon.avoided_production_t)
