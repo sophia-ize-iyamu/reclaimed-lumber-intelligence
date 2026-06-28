@@ -462,7 +462,7 @@ if page == "Municipal baseline":
     img_float("supply.jpg",
               "First-order, city-wide estimate of salvageable wood per market, built from "
               "demolition activity, real StatCan housing-stock age, and building archetype.",
-              width="78%",
+              width="100%",
               caption="Demolition is where the recoverable wood stream begins.")
     supply = data["supply"]
     sel = st.selectbox("CMA", cma_cfg.cma_names())
@@ -727,7 +727,7 @@ if page == "Ecosystem":
     fig.update_layout(yaxis=dict(autorange="reversed"))
     style_chart(fig, 320)
     st.plotly_chart(fig, width="stretch")
-    banner("workshop.jpg", "Wood processing workshop", max_width="58%")
+    banner("workshop.jpg", "Wood processing workshop")
     cap("Processing and remanufacturing: de-nailing, sorting and milling salvaged boards.")
 
     st.markdown("#### Storage and warehousing")
@@ -876,7 +876,7 @@ if page == "Demand segments":
     st.dataframe(seg_tbl[["segment", "tier", "absorption", "note"]],
                  width="stretch", hide_index=True)
 
-    banner("demand.jpg", "Reclaimed wood installed in an interior", max_width="68%")
+    banner("demand.jpg", "Reclaimed wood installed in an interior")
     cap("Reclaimed wood installed in a finished interior: the demand side at work.")
     st.markdown("#### Market context")
     st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
@@ -1017,7 +1017,7 @@ if page == "Economics":
               "Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. This "
               "is the economics behind why so little is recovered, and the constraints that hold it "
               "back.",
-              width="72%",
+              width="100%",
               caption="Deconstruction is hands-on and slow, which raises cost but creates more jobs.")
     st.markdown("#### Economics")
     ec = demand.ECONOMICS
@@ -1161,7 +1161,7 @@ if page == "Policy & capacity":
               "limited operational capacity. Each metro's construction-specific policy ambition is "
               "scored 0 to 3 from documented programs, then set against the recovery and processing "
               "firms in its province and its spec-ready supply.",
-              width="72%",
+              width="100%",
               caption="Municipal policy sets the rules: a city hall in Ontario.")
 
     prov_smes = ecosystem.province_company_estimate()
