@@ -385,12 +385,11 @@ if scenario_key != "baseline":
 if page == "Overview":
     st.markdown("""
     <div class="hero">
-      <div class="hero-eyebrow">Circular Construction Canada</div>
       <div class="hero-title">Reclaimed Lumber Intelligence Layer</div>
+      <div class="hero-eyebrow">Circular Construction Canada</div>
       <div class="hero-sub">Where salvageable lumber will emerge across Canada's 25 largest metro
       regions, what it's worth, what recovery capacity exists, and where the bottlenecks are.
       Every coefficient is sourced, and the uncertainty carries through to every number.</div>
-      <div class="hero-rule"></div>
     </div>
     """, unsafe_allow_html=True)
     banner("hero.jpg", "Reclaimed wood")
