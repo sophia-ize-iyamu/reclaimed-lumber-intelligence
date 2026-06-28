@@ -105,20 +105,28 @@ def gap_analysis(cma_summary_df):
     Returns one row per CMA: province, spec_ready_bf, province SME estimate,
     board feet of spec-ready supply per SME, and a plain-language gap flag.
     """
+    import numpy as np
+
     prov_smes = province_company_estimate()
-    rows = []
-    for _, r in cma_summary_df.iterrows():
-        prov = CMA_PROVINCE.get(r["cma"], "")
-        smes = prov_smes.get(prov, 0)
-        per_sme = r["spec_ready_bf"] / smes if smes else float("inf")
-        if smes <= 8:
-            flag = "Thin ecosystem: few recovery/processing firms in-province"
-        elif per_sme > 60_000:
-            flag = "Under-served: high supply per firm"
-        else:
-            flag = "Workable base"
-        rows.append({
-            "cma": r["cma"], "province": prov, "spec_ready_bf": r["spec_ready_bf"],
-            "province_smes": smes, "bf_per_sme": per_sme, "gap_flag": flag,
-        })
-    return pd.DataFrame(rows).sort_values("spec_ready_bf", ascending=False).reset_index(drop=True)
+    df = cma_summary_df.loc[:, ["cma", "spec_ready_bf"]].copy()
+    df["province"] = df["cma"].map(CMA_PROVINCE).fillna("")
+    df["province_smes"] = df["province"].map(prov_smes).fillna(0).astype(int)
+    # Coerce supply to numeric so a None or object-dtype cell cannot break the
+    # arithmetic on any pandas build (the cloud and local versions differ).
+    df["spec_ready_bf"] = pd.to_numeric(df["spec_ready_bf"], errors="coerce").fillna(0.0)
+
+    smes = df["province_smes"].to_numpy()
+    spec = df["spec_ready_bf"].to_numpy(dtype=float)
+    safe_smes = np.where(smes == 0, 1, smes)
+    df["bf_per_sme"] = np.where(smes > 0, spec / safe_smes, np.inf)
+
+    def flag(sm, per):
+        if sm <= 8:
+            return "Thin ecosystem: few recovery/processing firms in-province"
+        if per > 60_000:
+            return "Under-served: high supply per firm"
+        return "Workable base"
+
+    df["gap_flag"] = [flag(int(sm), float(p)) for sm, p in zip(smes, df["bf_per_sme"].to_numpy())]
+    cols = ["cma", "province", "spec_ready_bf", "province_smes", "bf_per_sme", "gap_flag"]
+    return df.sort_values("spec_ready_bf", ascending=False).reset_index(drop=True)[cols]
