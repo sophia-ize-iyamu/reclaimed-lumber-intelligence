@@ -283,6 +283,22 @@ allow_network = st.sidebar.toggle(
     help="Pull real Toronto demolition permits by year (offline fallback if unreachable).")
 st.sidebar.caption("Every coefficient is sourced. See the Sources & void section.")
 
+st.sidebar.markdown("---")
+with st.sidebar.expander("Glossary"):
+    st.markdown(
+        "- **CMA**: Census Metropolitan Area (one of Canada's 25 largest metros)\n"
+        "- **bf**: board feet (lumber volume); **M bf** is millions of board feet\n"
+        "- **SFD**: single-family detached house (pre-war, post-war, modern)\n"
+        "- **SME**: small and medium-sized enterprise\n"
+        "- **CRD**: construction, renovation and demolition\n"
+        "- **CO2e**: carbon dioxide equivalent (t = tonnes)\n"
+        "- **P10 / P50 / P90**: conservative / central / optimistic Monte Carlo percentiles\n"
+        "- **NLT / DLT**: nail-laminated / dowel-laminated timber (mass-timber products)\n"
+        "- **ADU**: accessory dwelling unit\n"
+        "- **ECCC**: Environment and Climate Change Canada\n"
+        "- **StatCan**: Statistics Canada\n"
+        "- **TGS**: Toronto Green Standard")
+
 reg = build_registry(scenario_key)
 overrides_sig = tuple(sorted(
     (str(k), v) for k, v in st.session_state.get("assumption_overrides", {}).items()))
@@ -440,7 +456,7 @@ if page == "Hotspots & archetypes":
     with colA:
         st.markdown("**Demolition hotspots (Toronto worked example)**")
         fig = px.scatter_geo(hotspots, lat="lat", lon="lon", size="annual_permits",
-                             color="dominant_archetype", hover_name="neighbourhood",
+                             color="archetype_label", hover_name="neighbourhood",
                              hover_data={"annual_permits": True, "lat": False, "lon": False},
                              scope="north america", size_max=45)
         style_geo(fig, 420)
