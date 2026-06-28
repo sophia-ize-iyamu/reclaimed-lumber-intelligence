@@ -252,7 +252,7 @@ NAV = [
     ("Demand", ["Demand segments", "Demand drivers", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps", "Demand gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
-    ("Platform", ["Platform roadmap", "Projects", "Demand registry", "Matchmaking"]),
+    ("Platform", ["Platform roadmap", "Supply registry", "Demand registry", "Matchmaking"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
@@ -730,6 +730,20 @@ if page == "Ecosystem":
     cap("The top barrier is the missing re-grading and certification path for structural reuse, "
         "which caps the largest demand tier before economics apply.")
 
+    st.markdown("#### Diversion performance by province")
+    pv = pd.DataFrame(sorted(policy.PROVINCE_DIVERSION.items(), key=lambda x: -x[1]),
+                      columns=["province", "diversion"])
+    fig = px.bar(pv, x="province", y="diversion",
+                 labels={"diversion": "all-waste diversion (%)", "province": ""})
+    fig.update_traces(marker_color=ACCENT)
+    fig.add_hline(y=policy.NATIONAL_DIVERSION, line_dash="dash", line_color="rgba(128,128,128,0.75)",
+                  annotation_text=f"national {policy.NATIONAL_DIVERSION}%",
+                  annotation_position="top right")
+    style_chart(fig, 300)
+    st.plotly_chart(fig, width="stretch")
+    cap("By diversion rate, Nova Scotia and BC lead; by absolute tonnage, Ontario and Quebec "
+        "dominate. Construction and demolition waste sits inside this stream. " + policy.DIVERSION_SOURCE)
+
     st.markdown("#### Sector capacity context")
     st.dataframe(pd.DataFrame(companies.SECTOR_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
@@ -755,6 +769,20 @@ if page == "Supply gaps":
     g1, g2 = st.columns(2)
     g1.metric("CMAs analyzed", len(gaps))
     g2.metric("Markets flagged thin or under-served", int(n_gap))
+
+    st.markdown("**Spec-ready supply per in-province firm (top 12)**")
+    gp = gaps[gaps["bf_per_sme"] != float("inf")].sort_values(
+        "bf_per_sme", ascending=False).head(12)
+    fig = px.bar(gp, x="bf_per_sme", y="cma", orientation="h", color="gap_flag",
+                 color_discrete_map={"Workable base": ACCENT},
+                 labels={"bf_per_sme": "spec-ready bf per in-province firm", "cma": "",
+                         "gap_flag": ""})
+    fig.update_layout(yaxis=dict(autorange="reversed"), legend=dict(orientation="h", y=1.08))
+    style_chart(fig, 420)
+    st.plotly_chart(fig, width="stretch")
+    cap("Higher bars mean more spec-ready supply per firm able to handle it, the markets where "
+        "recovery capacity is most stretched relative to supply.")
+
     gshow = gaps.copy()
     gshow["spec_ready"] = gshow["spec_ready_bf"].map(fmt_bf)
     gshow["bf per SME"] = gshow["bf_per_sme"].map(lambda x: fmt_bf(x) if x != float("inf") else "n/a")
@@ -953,11 +981,67 @@ if page == "Economics":
                "Sources: Light House SME report (March 2026); Vancouver Economic Commission, "
                "Unbuilders & BCIT, Business Case for Deconstruction (July 2020).")
 
+    st.markdown("#### Deconstruction versus demolition")
+    dvd = pd.DataFrame(demand.DECON_VS_DEMO, columns=["method", "lo", "hi", "time"])
+    fig = go.Figure()
+    for _, r in dvd.iterrows():
+        is_decon = "decon" in r["method"].lower()
+        fig.add_trace(go.Bar(
+            y=[r["method"]], x=[r["hi"] - r["lo"]], base=[r["lo"]], orientation="h",
+            marker_color=ACCENT if is_decon else "#9A9A92", showlegend=False,
+            text=f'${r["lo"]} to {r["hi"]}/sq ft  ({r["time"]})', textposition="auto",
+            hovertemplate=f'{r["method"]}: ${r["lo"]} to {r["hi"]}/sq ft, {r["time"]}<extra></extra>'))
+    style_chart(fig, 230, xaxis_title="cost per sq ft (US$, range)")
+    st.plotly_chart(fig, width="stretch")
+    cap("Deconstruction costs more per square foot and takes far longer, the core reason recovery "
+        "loses to the excavator without a buyer or policy to close the gap. " + demand.DECON_VS_DEMO_SOURCE)
+
+    w1, w2 = st.columns([3, 2])
+    with w1:
+        st.markdown("**Net cost after wood-donation tax credits (Canadian case)**")
+        steps = demand.NET_COST_CASE
+        fig = go.Figure(go.Waterfall(
+            orientation="v",
+            measure=["absolute" if k == "total" else "relative" for _, _, k in steps],
+            x=[s[0] for s in steps], y=[s[1] for s in steps],
+            connector={"line": {"color": "rgba(128,128,128,0.4)"}},
+            increasing={"marker": {"color": "#9A9A92"}},
+            decreasing={"marker": {"color": ACCENT}},
+            totals={"marker": {"color": "#2F7D4F"}}))
+        fig.add_hline(y=demand.DEMOLITION_BASELINE_CAD, line_dash="dash",
+                      line_color="rgba(128,128,128,0.75)",
+                      annotation_text="demolition baseline", annotation_position="top left")
+        style_chart(fig, 330, yaxis_title="CAD per house")
+        st.plotly_chart(fig, width="stretch")
+        cap("Net of the donation tax credit, deconstruction lands below demolition. "
+            + demand.NET_COST_SOURCE)
+    with w2:
+        st.markdown("**Jobs per project**")
+        rj = pd.DataFrame(demand.RECOVERY_JOBS, columns=["method", "jobs"])
+        fig = px.bar(rj, x="method", y="jobs", color="method",
+                     color_discrete_map={"Full deconstruction": ACCENT,
+                                         "Mechanical demolition": "#9A9A92"},
+                     labels={"jobs": "jobs per project", "method": ""})
+        fig.update_layout(showlegend=False)
+        style_chart(fig, 330)
+        st.plotly_chart(fig, width="stretch")
+        cap("Deconstruction is labour-intensive: about 6 jobs per project versus 1. "
+            + demand.RECOVERY_JOBS_SOURCE)
+
     st.markdown("#### Why recoverable wood is not reclaimed")
     bt = pd.DataFrame(demand.BOTTLENECKS)
     bt = bt.rename(columns={"rank": "#", "name": "bottleneck", "side": "binds on", "note": "explanation"})
     st.dataframe(bt[["#", "bottleneck", "binds on", "explanation"]],
                  width="stretch", hide_index=True)
+    btv = pd.DataFrame(demand.BOTTLENECKS)
+    btv["severity"] = 6 - btv["rank"]
+    fig = px.bar(btv.sort_values("severity"), x="severity", y="name", orientation="h", color="side",
+                 color_discrete_map={"Demand (rules)": "#1B4D7A", "Coordination": "#2F7D4F",
+                                     "Supply": ACCENT},
+                 labels={"severity": "severity (5 = most binding)", "name": "", "side": "binds on"})
+    fig.update_layout(legend=dict(orientation="h", y=1.14))
+    style_chart(fig, 300)
+    st.plotly_chart(fig, width="stretch")
     cap("Ranked by severity. The largest demand tier (structural reuse) is capped by code "
                "before economics even apply, and the next constraint is the missing forward supply "
                "signal, which is exactly what a predictive layer supplies.")
@@ -1074,6 +1158,18 @@ if page == "Policy & capacity":
     style_chart(fig, 400)
     st.plotly_chart(fig, width="stretch")
 
+    st.markdown("**Policy ambition across the 25 metros**")
+    geo = pd.DataFrame(cma_cfg.list_cmas())[["cma", "lat", "lon"]].merge(pol, on="cma", how="inner")
+    fig = px.scatter_geo(geo, lat="lat", lon="lon", color="score", size="spec_ready_bf",
+                         color_continuous_scale="Greens", hover_name="cma",
+                         hover_data={"policy": True, "lat": False, "lon": False,
+                                     "score": False, "spec_ready_bf": False},
+                         scope="north america", size_max=30, labels={"score": "policy (0-3)"})
+    style_geo(fig, 380)
+    st.plotly_chart(fig, width="stretch")
+    cap("Marker colour is policy ambition (0 to 3), size is spec-ready supply. The deep-green, "
+        "policy-leading metros are few; most carry supply with little construction-specific policy.")
+
     st.markdown("**All metros**")
     show = pol.sort_values(["score", "spec_ready_bf"], ascending=[False, False]).copy()
     show["spec-ready"] = show["spec_ready_bf"].map(fmt_bf)
@@ -1089,6 +1185,12 @@ if page == "Policy & capacity":
                "with capacity. Scores come from documented programs; where no local by-law is "
                "documented a metro defaults to its provincial signal. Federal backdrop: Canada "
                "Green Buildings Strategy (2024) addresses embodied carbon.")
+
+    st.markdown("#### Documented deconstruction and diversion by-laws")
+    st.dataframe(pd.DataFrame(policy.BYLAWS, columns=["Jurisdiction", "Requirement", "Year"]),
+                 width="stretch", hide_index=True)
+    cap("Salvage and diversion by-laws cluster in BC, with Toronto the main example outside it. "
+        + policy.BYLAWS_SOURCE)
 
 
 # --------------------------------------------------------------------------- #
@@ -1157,7 +1259,7 @@ if page == "Platform roadmap":
          "Add machine-readable permit feeds (Vancouver, Ottawa, Calgary, Hamilton) behind the same "
          "schema. Coverage tiers climb and confidence bands tighten on their own."),
         ("Phase 2", "6 to 18 months", "Two-sided intake and verified actors",
-         "Open the project store to contractors to register sites, and the demand registry to buyers "
+         "Open the supply registry to contractors to register sites, and the demand registry to buyers "
          "to post standing wants. Verify the processor, warehouse and buyer directory. Both sides of "
          "the match are now logged."),
         ("Phase 3", "18 months and beyond", "Live two-sided matchmaking",
@@ -1223,7 +1325,7 @@ if page == "Platform roadmap":
                    "demolition and housing tables.")
     with i2:
         st.markdown("**Internal**")
-        cap("The assumptions registry, project store and demand registry let CCC, contractors and "
+        cap("The assumptions registry, supply registry and demand registry let CCC, contractors and "
                    "buyers correct and extend the model without touching code.")
     with i3:
         st.markdown("**Outbound**")
@@ -1253,10 +1355,10 @@ if page == "Platform roadmap":
 # --------------------------------------------------------------------------- #
 # Projects
 # --------------------------------------------------------------------------- #
-if page == "Projects":
-    st.subheader("Project store: add a specific demolition project")
-    st.markdown("Layer real projects onto the baseline. Each is scored with the same "
-                "sourced cascade and saved persistently.")
+if page == "Supply registry":
+    st.subheader("Supply registry: add a specific demolition site")
+    st.markdown("The supply side of the match. Layer real demolition and deconstruction sites onto "
+                "the baseline. Each is scored with the same sourced cascade and saved persistently.")
     with st.form("add_project"):
         c1, c2, c3 = st.columns(3)
         name = c1.text_input("Project / site name", "Sample infill site")
@@ -1293,11 +1395,11 @@ if page == "Projects":
 
 
 # --------------------------------------------------------------------------- #
-# Demand registry (buyer-side store, mirror of the project store)
+# Demand registry (buyer-side store, mirror of the supply registry)
 # --------------------------------------------------------------------------- #
 if page == "Demand registry":
     st.subheader("Demand registry: log what a buyer wants")
-    st.markdown("The buyer-side mirror of the project store. Projects log supply (demolition "
+    st.markdown("The buyer-side mirror of the supply registry. That logs supply (demolition "
                 "sites); this logs demand, so matchmaking has both sides. A teardown is a real "
                 "match only when a buyer wants that grade, in that metro, on that timeline.")
     with st.form("add_demand"):
@@ -1348,9 +1450,9 @@ if page == "Matchmaking":
                "commercial exchange. CCC's role is to coordinate the match, not to run a marketplace.")
 
     stored = projects.projects_dataframe()
-    opts = ["Quick entry"] + (["From the project store"] if not stored.empty else [])
+    opts = ["Quick entry"] + (["From the supply registry"] if not stored.empty else [])
     mode = st.radio("Material source", opts, horizontal=True)
-    if mode == "From the project store" and not stored.empty:
+    if mode == "From the supply registry" and not stored.empty:
         pick = st.selectbox("Project", stored["name"].tolist())
         prow = stored[stored["name"] == pick].iloc[0]
         site = {"name": pick, "cma": prow["cma"], "archetype": prow["archetype"],
@@ -1374,6 +1476,15 @@ if page == "Matchmaking":
     s1.metric("Predicted spec-ready", fmt_bf(res["spec_ready_bf"]))
     s2.metric("Reclaimed value", fmt_cad(res["value_cad"]))
     s3.metric("Carbon benefit", f"{carbon.total_benefit_t(res['spec_ready_bf']):,.1f} t CO2e")
+
+    st.markdown("**This teardown's recovery cascade**")
+    fun = pd.DataFrame({"stage": ["Framing lumber", "Recoverable", "Salvageable", "Spec-ready"],
+                        "bf": [res["framing_bf"], res["recoverable_bf"],
+                               res["salvageable_bf"], res["spec_ready_bf"]]})
+    fig = go.Figure(go.Funnel(y=fun["stage"], x=fun["bf"], texttemplate="%{x:,.0f} bf",
+                              marker={"color": ACCENT}))
+    style_chart(fig, 260)
+    st.plotly_chart(fig, width="stretch")
 
     st.markdown(f"#### Matched firms in {prov or 'province'}")
     comp = ecosystem.company_table()
@@ -1408,7 +1519,7 @@ if page == "Matchmaking":
 
     if st.button("Register interest (prototype)"):
         rec = projects.add_project(site, reg)
-        st.success(f"Logged to the project store as entry #{rec['id']}. On a persistent backend this "
+        st.success(f"Logged to the supply registry as entry #{rec['id']}. On a persistent backend this "
                    "would notify the matched firms and buyers; on the shared cloud demo the store is "
                    "session-only.")
 

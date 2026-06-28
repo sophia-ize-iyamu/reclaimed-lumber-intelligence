@@ -64,6 +64,30 @@ PROVINCE_DEFAULT = {
 
 SCORE_LABEL = {3: "Leading", 2: "Active", 1: "Emerging", 0: "None documented"}
 
+# All-waste diversion rate by province, 2022 (the most recent national survey).
+# National rate 27%. NS, BC, SK, NL are sourced point values; QC, ON, AB, MB are
+# StatCan reported bands, shown as approximate. (percent)
+PROVINCE_DIVERSION = {
+    "NS": 43, "BC": 38, "QC": 32, "ON": 25, "AB": 18, "MB": 18, "SK": 18, "NL": 11,
+}
+NATIONAL_DIVERSION = 27
+DIVERSION_SOURCE = ("ECCC Canadian Environmental Sustainability Indicators, solid-waste diversion "
+                    "(2022 data, Nov 2024); StatCan Table 38-10-0138. QC, ON, AB, MB approximate.")
+
+# Documented municipal deconstruction and demolition-diversion by-laws (dated).
+# (jurisdiction, requirement, year)
+BYLAWS = [
+    ("Vancouver, BC", "Green Demolition By-law: 75% reuse/recycle for pre-1950 homes, 90% for "
+     "character houses; deconstruction for pre-1910 and heritage homes", "2014, expanded 2019"),
+    ("Victoria, BC", "Deconstruction by-law: salvage 40 kg of wood per m2; $19,500 deposit", "2022"),
+    ("North Vancouver (District), BC", "Salvage about 3.5 kg of lumber per sq ft for pre-1950 "
+     "homes; $15,000 deposit", "2023"),
+    ("Port Moody and Burnaby, BC", "Minimum 70% demolition-material recycling", "documented"),
+    ("Toronto, ON", "Green Standard v4: divert 75% of construction and demolition material; "
+     "embodied-carbon caps of 350 then 250 kg CO2e/m2", "2022, tightening to 2028"),
+]
+BYLAWS_SOURCE = "CWMA by-law knowledge base (2024); City of Victoria; District of North Vancouver; City of Toronto; CBC; CTV (2022-2023)."
+
 
 def policy_for(cma, province):
     """Return (score, label, initiative, source) for a CMA."""

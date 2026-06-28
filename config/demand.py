@@ -72,6 +72,32 @@ ECONOMICS = {
                                 "Deconstruction, July 2020."),
 }
 
+# Deconstruction versus mechanical demolition, cost and time (for the Economics
+# page). Cost is US$ per square foot, shown as a range. (method, cost_low, cost_high, time_label)
+DECON_VS_DEMO = [
+    ("Mechanical demolition", 4, 10, "1 to 4 days"),
+    ("Full deconstruction", 8, 16, "2 or more weeks"),
+]
+DECON_VS_DEMO_SOURCE = ("Cost per sq ft: Angi (2026); time: DemoPros (2025) and Journal of "
+                        "Commerce (2021). US ranges, indicative.")
+
+# Canadian per-house net-cost case (Unbuilders, Vancouver): a wood-donation tax
+# credit takes deconstruction below demolition. Illustrative single-firm case.
+# (step, value_cad, kind)  kind in {'total','delta'} for a waterfall.
+NET_COST_CASE = [
+    ("Deconstruction, gross", 43000, "total"),
+    ("Federal donation credit", -18850, "delta"),
+    ("Provincial donation credit", -9555, "delta"),
+    ("Deconstruction, net", 14595, "total"),
+]
+DEMOLITION_BASELINE_CAD = 26500
+NET_COST_SOURCE = ("Unbuilders / Habitat via The Construction Source (2023) and CBC (2020). "
+                   "Illustrative case; the credit depends on appraisal and the donor's tax position.")
+
+# Jobs created, deconstruction versus demolition (per project). (method, jobs)
+RECOVERY_JOBS = [("Mechanical demolition", 1), ("Full deconstruction", 6)]
+RECOVERY_JOBS_SOURCE = "Journal of Commerce / ConstructConnect (2021): about 6 jobs per deconstruction project versus 1 for demolition."
+
 # The ranked diagnosis: why recoverable wood is not reclaimed. side = where the
 # constraint binds. The order is the project's read of severity.
 BOTTLENECKS = [

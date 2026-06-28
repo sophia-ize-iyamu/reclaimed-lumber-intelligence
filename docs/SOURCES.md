@@ -116,6 +116,31 @@ standards-body, and trade-press rows are firmer.
 | Structural-timber reuse barriers | Certification gap, unknown provenance | Taylor and Francis review | 2025 | https://www.tandfonline.com/doi/full/10.1080/17480272.2025.2517186 | Peer-reviewed |
 | Architect and designer count | Over 5,000 registered architects (approximate) | RAIC Vital Statistics; Interior Designers of Canada | 2024-2025 | https://chop.raic.ca/appendix-c-vital-statistics-provincial-and-territorial-associations-of-architects | Specifier channel; approximate |
 
+## Cost economics, jobs, and provincial diversion (added June 2026)
+
+Added to put visuals on the Economics, Supply gaps, Policy and Ecosystem pages.
+Cost-per-area and per-house figures are contractor and single-firm estimates shown
+as ranges or illustrative cases; government and StatCan rows are firmer.
+
+| Item | Value | Source | Date | URL | Notes |
+|---|---|---|---|---|---|
+| Deconstruction vs demolition cost | demo about US$4-10/sq ft; deconstruction about US$8-16/sq ft | Angi, cost-to-demolish-a-house | 2026 | https://www.angi.com/articles/how-much-does-it-cost-demolish-house.htm | Contractor aggregator; ranges |
+| Deconstruction vs demolition time | demo 1-4 days; deconstruction 2 or more weeks | DemoPros; Journal of Commerce | 2021-2025 | https://canada.constructconnect.com/joc/news/projects/2021/05/deconstruction-a-new-way-to-make-old-buildings-disappear | |
+| Kiln drying cost | about US$0.70-2.00/bf | SW Wood Dryer | 2024-2025 | https://swwooddryer.com/how-much-does-it-cost-to-kiln-dry-lumber/ | Processing component |
+| De-nailing and inspection | adds about US$3-8/sq ft, manual | Moruxo | 2024 | https://moruxo.com/blog/cost-of-reclaimed-vs-new-wood-slabs | |
+| Net cost after donation tax credits (Canadian case) | demolition about $26,500; deconstruction net about $14,595 after about $18,850 federal and $9,555 provincial credits | Unbuilders / Habitat via The Construction Source; CBC | 2020-2023 | https://www.theconstructionsource.ca/2023/06/01/unbuilders/ | Illustrative single-firm case |
+| Jobs, deconstruction vs demolition | about 6 jobs per project vs 1 | Journal of Commerce / ConstructConnect | 2021 | https://canada.constructconnect.com/joc/news/projects/2021/05/deconstruction-a-new-way-to-make-old-buildings-disappear | |
+| Jobs per 10,000 tons by end-of-life path | landfill about 1, recycling about 10, reuse far higher | Institute for Local Self-Reliance | current | https://ilsr.org/articles/recycling-means-business/ | |
+| Per-house recovery (Unbuilders) | about 70 t diverted, about 10 t lumber, under 10% waste | Journal of Commerce | 2021 | https://canada.constructconnect.com/joc/news/projects/2021/05/deconstruction-a-new-way-to-make-old-buildings-disappear | |
+| Salvage rate and carbon (36-home study) | about 27% by weight salvaged; about 7.6 t CO2e/house benefit; softwood framing about 85% of salvage | Oregon DEQ, Deconstruction vs Demolition | 2019 | https://www.oregon.gov/deq/FilterDocs/DeconstructionReport.pdf | Primary study |
+| Provincial all-waste diversion | national 27%; NS 43%, BC 38%, NL 11% (2022) | ECCC CESI; StatCan Table 38-10-0138 | 2022 / Nov 2024 | https://www.canada.ca/en/environment-climate-change/services/environmental-indicators/solid-waste-diversion-disposal.html | QC, ON, AB, MB approximate |
+| Diverted tonnage by province | Ontario 3.4 Mt, Quebec 2.7 Mt (2022) | StatCan, The Daily | Apr 2024 | https://www150.statcan.gc.ca/n1/daily-quotidien/240408/dq240408b-eng.htm | |
+| Victoria deconstruction by-law | salvage 40 kg wood per m2; $19,500 deposit | City of Victoria; CTV | 2022 | https://victoria.ca/EN/main/residents/waste-reduction/construction-waste.html | |
+| North Vancouver salvage by-law | about 3.5 kg lumber per sq ft, pre-1950; $15,000 deposit | District of North Vancouver; CBC | 2023 | https://www.dnv.org/business-development/demolition-waste-reduction-bylaw | |
+| BC municipalities with demolition recycling by-laws | Port Moody and Burnaby 70%; plus Richmond, Surrey, Coquitlam, West Vancouver, Squamish | Coast Waste Management Association | 2024 | https://cwma.ca/knowledge-base-2/deconstruction-by-laws/ | |
+| Quebec building-sector CRD | about 1.675 Mt (2023), 53% to sorting centres | RECYC-QUEBEC, Bilan 2023 | 2023 | https://www.recyc-quebec.gouv.qc.ca/sites/default/files/documents/bilan-gmr-2023-crd.pdf | |
+| Metro Vancouver tipping fees | clean wood $118/t, C&D processing residual $185/t (2025) | Metro Vancouver, Bylaw 383 | 2025 | https://metrovancouver.org/services/solid-waste/Documents/sws-tipping-fee-updates-2025.pdf | |
+
 ## Bundled source PDFs (docs/sources/)
 
 ECCC company directory; ECCC material-flow chart; ECCC stakeholders infographic;
