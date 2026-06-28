@@ -238,19 +238,11 @@ _IMG_DIR = os.path.join(os.path.dirname(__file__), "assets", "img")
 
 
 def banner(name, alt="", max_width=None):
-    """Render a content image: full-width, or centered at max_width (CC0 imagery)."""
+    """Full-width content image, edge to edge, resizing with the page like the charts."""
     p = os.path.join(_IMG_DIR, name)
     if not os.path.exists(p):
         return
-    with open(p, "rb") as f:
-        b = base64.b64encode(f.read()).decode()
-    if max_width:
-        style = (f"width:{max_width};max-width:100%;border-radius:12px;"
-                 "margin:0.3rem auto 0.5rem;display:block")
-    else:
-        style = "width:100%;border-radius:12px;margin:0.1rem 0 0.5rem;display:block"
-    st.markdown(f'<img src="data:image/jpeg;base64,{b}" alt="{alt}" style="{style}" />',
-                unsafe_allow_html=True)
+    st.image(p, width="stretch")
 
 
 def img_float(name, text, width="100%", caption=""):
