@@ -288,7 +288,7 @@ with st.sidebar.expander("Glossary"):
     st.markdown(
         "- **CMA**: Census Metropolitan Area (one of Canada's 25 largest metros)\n"
         "- **bf**: board feet (lumber volume); **M bf** is millions of board feet\n"
-        "- **SFD**: single-family detached house (pre-war, post-war, modern)\n"
+        "- **Single-family detached**: a standalone house for one household, no shared walls\n"
         "- **SME**: small and medium-sized enterprise\n"
         "- **CRD**: construction, renovation and demolition\n"
         "- **CO2e**: carbon dioxide equivalent (t = tonnes)\n"
