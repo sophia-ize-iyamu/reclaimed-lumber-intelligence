@@ -596,6 +596,8 @@ if page == "Forecast & uncertainty":
         cum_show[c] = cum_show[c].map(fmt_bf)
     st.dataframe(cum_show.rename(columns={"central": "central (sum)", "coverage_tier": "coverage"}),
                  width="stretch", hide_index=True)
+    cap("Demand is forecast too: see Demand drivers for the demand outlook to 2036 and the "
+        "supply-demand balance over time.")
 
 
 # --------------------------------------------------------------------------- #
@@ -850,6 +852,53 @@ if page == "Demand drivers":
     cap("Furniture and flooring lead. Shares come from market-research firms that disagree "
         "firm-to-firm, so the bars are reconciled midpoints and the table shows the observed range. "
         "End-use skews commercial today (about 58%), with residential growing faster (Grand View, 2022).")
+
+    st.markdown("#### Demand outlook and the supply-demand balance to 2036")
+    base_year = int(val(reg["forecast"]["base_year"]))
+    horizon = int(val(reg["forecast"]["horizon_years"]))
+    ta = demand.tier_a_total()
+    tb_tot = demand.tier_b_total()
+    code_path = st.checkbox(
+        "Scenario: a structural-reuse code path opens in 2030 (unlocks Tier B)", value=False)
+    dfc = pd.DataFrame(demand_drivers.demand_forecast(
+        ta, base_year=base_year, horizon=horizon,
+        code_year=2030 if code_path else None, base_tier_b=tb_tot))
+    sup = data["forecast"].groupby("year", as_index=False).agg(
+        s=("spec_ready_bf", "sum"), s_lo=("spec_ready_bf_low", "sum"),
+        s_hi=("spec_ready_bf_high", "sum"))
+    MM = 1e6
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=list(dfc["year"]) + list(dfc["year"][::-1]),
+        y=list(dfc["high"] / MM) + list(dfc["low"][::-1] / MM),
+        fill="toself", fillcolor="#9A9A92", opacity=0.12, line=dict(width=0),
+        hoverinfo="skip", showlegend=False))
+    fig.add_trace(go.Scatter(x=dfc["year"], y=dfc["central"] / MM, mode="lines+markers",
+                             name="Demand (legal today)", line=dict(color="#5C5C54")))
+    fig.add_trace(go.Scatter(
+        x=list(sup["year"]) + list(sup["year"][::-1]),
+        y=list(sup["s_hi"] / MM) + list(sup["s_lo"][::-1] / MM),
+        fill="toself", fillcolor=ACCENT, opacity=0.14, line=dict(width=0),
+        hoverinfo="skip", showlegend=False))
+    fig.add_trace(go.Scatter(x=sup["year"], y=sup["s"] / MM, mode="lines+markers",
+                             name="Spec-ready supply", line=dict(color=ACCENT)))
+    style_chart(fig, 430, xaxis_title="year", yaxis_title="M board feet per year",
+                legend=dict(orientation="h", y=1.08))
+    st.plotly_chart(fig, width="stretch")
+    g = demand_drivers.DEMAND_GROWTH
+    end = dfc.iloc[-1]
+    sup_end = sup.iloc[-1]
+    o1, o2, o3 = st.columns(3)
+    o1.metric(f"Demand {base_year}", fmt_bf(ta))
+    o2.metric(f"Demand {base_year + horizon} (central)", fmt_bf(end["central"]))
+    o3.metric(f"Supply {base_year + horizon} (central)", fmt_bf(sup_end["s"]))
+    cap(f"Demand grows at about {g['central'] * 100:.0f}% a year (band {g['low'] * 100:.0f} to "
+        f"{g['high'] * 100:.0f}%); supply is the national spec-ready forecast. The gap persists "
+        "across the horizon: demand stays well above spec-ready supply. The code-path scenario "
+        "steps demand far higher by unlocking structural reuse.")
+    cap("Confidence and limits: this is a growth-rate projection from sourced market rates, not a "
+        "bottom-up yearly demand model, and the band reflects the growth range rather than full "
+        "Monte Carlo. " + demand_drivers.DEMAND_FORECAST_SOURCE)
 
     st.markdown("#### Policy and procurement pull (Canada)")
     st.markdown("The structural demand engine. Embodied-carbon procurement and codes increasingly "

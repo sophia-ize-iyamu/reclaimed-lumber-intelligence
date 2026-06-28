@@ -112,6 +112,42 @@ SUBSTITUTE = [
      "Floor Covering News (2025)"),
 ]
 
+# Demand forecast assumptions. Legal-today (Tier A) demand grows with the
+# reclaimed-wood market: the central rate is the market's own growth, and the band
+# spans a conservative floor to a green-building-pull ceiling. Tier B (structural
+# reuse) is blocked until a building-code path opens, so it is modelled as a step
+# that phases in over three years from a chosen code-path year.
+DEMAND_GROWTH = {"low": 0.03, "central": 0.045, "high": 0.07}  # per year, Tier A
+GREEN_PULL_RATE = 0.106  # NA green-building CAGR, the demand-pull ceiling for context
+DEMAND_FORECAST_SOURCE = ("Tier A grown at reclaimed-lumber market growth, about 4 to 5% a year "
+                          "central with a 3 to 7% band (market.us; Precedence Research, 2024-2025); "
+                          "green-building pull about 10.6% a year for context (Mordor Intelligence, 2025).")
+
+
+def demand_forecast(base_tier_a, base_year=2026, horizon=10, code_year=None, base_tier_b=0.0):
+    """Project legal-today (Tier A) demand forward at the sourced growth band.
+
+    If code_year is set, structural reuse (Tier B) unlocks that year and phases in
+    over three years, added on top. Returns a list of dicts with year, central,
+    low and high in board feet.
+    """
+    g = DEMAND_GROWTH
+    out = []
+    for h in range(0, horizon + 1):
+        year = base_year + h
+        central = base_tier_a * (1 + g["central"]) ** h
+        low = base_tier_a * (1 + g["low"]) ** h
+        high = base_tier_a * (1 + g["high"]) ** h
+        if code_year is not None and year >= code_year:
+            ramp = min(1.0, (year - code_year + 1) / 3.0)
+            add = base_tier_b * ramp
+            central += add
+            low += add * 0.6
+            high += add
+        out.append({"year": year, "central": central, "low": low, "high": high})
+    return out
+
+
 # Indicative pricing and willingness to pay. (item, value, note, source)
 PRICE_POINTS = [
     ("Reclaimed flooring, raw material", "about US$10 to 20 per sq ft",
