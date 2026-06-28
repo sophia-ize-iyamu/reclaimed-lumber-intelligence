@@ -239,7 +239,7 @@ NAV = [
     ("Demand", ["Demand segments", "Demand gaps", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
-    ("Platform", ["Platform roadmap", "Projects"]),
+    ("Platform", ["Platform roadmap", "Projects", "Matchmaking"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
@@ -626,6 +626,13 @@ if page == "Ecosystem":
     style_chart(fig, 320)
     st.plotly_chart(fig, width="stretch")
 
+    st.markdown("#### Storage and warehousing")
+    st.markdown("Warehousing is the connective layer between recovery and reuse, and it is the "
+                "thinnest part of the map. The clearest physical nodes today are the "
+                f"{restore_count} Habitat ReStores that hold and resell salvaged material; dedicated "
+                "reclaimed-lumber warehousing is sparse, which is why storage and standards rank "
+                "among the bottlenecks. A verified warehouse and capacity registry is a Phase-2 build.")
+
 
 
 # --------------------------------------------------------------------------- #
@@ -812,10 +819,20 @@ if page == "Policy & capacity":
 
     fig = px.scatter(pol, x="score", y="province_firms", size="spec_ready_bf", color="flag",
                      hover_name="cma", size_max=34,
-                     labels={"score": "policy ambition (0-3)",
-                             "province_firms": "in-province recovery firms", "flag": ""})
-    fig.update_layout(legend=dict(orientation="h", y=1.16))
-    style_chart(fig, 380)
+                     labels={"score": "policy ambition (0-3)  ->",
+                             "province_firms": "in-province recovery firms  ->", "flag": ""})
+    xmid = 1.5; ymid = pol["province_firms"].median(); ymax = pol["province_firms"].max()
+    fig.add_vline(x=xmid, line_dash="dot", line_color="rgba(128,128,128,0.45)")
+    fig.add_hline(y=ymid, line_dash="dot", line_color="rgba(128,128,128,0.45)")
+    for qx, qy, txt in [(0.4, ymax, "Policy opportunity"),
+                        (2.6, ymax, "Aligned: policy + capacity"),
+                        (0.4, 0, "Early"),
+                        (2.6, 0, "Ambition ahead of capacity")]:
+        fig.add_annotation(x=qx, y=qy, text=txt, showarrow=False,
+                           font=dict(size=10, color="#8B8D90"))
+    fig.update_xaxes(range=[-0.3, 3.3], tickvals=[0, 1, 2, 3])
+    fig.update_layout(legend=dict(orientation="h", y=1.18))
+    style_chart(fig, 400)
     st.plotly_chart(fig, width="stretch")
 
     show = pol.sort_values(["score", "spec_ready_bf"], ascending=[False, False]).copy()
@@ -852,6 +869,10 @@ if page == "Embodied carbon":
     st.info(f"Toronto Green Standard v4 lets reused or salvaged components count as zero upfront "
             f"embodied carbon against its {carbon.TGS_TIER2_CAP} (Tier 2) and {carbon.TGS_TIER3_CAP} "
             "(Tier 3) kg CO2e/m2 caps, so reclaimed lumber directly helps projects meet the cap.")
+    cars = (av + bio) / 4.6
+    st.success(f"In plain terms, that total climate benefit is roughly {cars:,.0f} passenger cars "
+               "off the road for a year (US EPA: 4.6 t CO2e per vehicle per year), combining "
+               "avoided manufacturing and biogenic carbon kept in use.")
 
     st.markdown("#### Carbon benefit by market")
     cb = data["summary"][["cma", "spec_ready_bf"]].copy()
@@ -1024,6 +1045,69 @@ if page == "Projects":
             st.rerun()
     else:
         st.info("No projects stored yet. Add one above.")
+
+
+# --------------------------------------------------------------------------- #
+# Matchmaking (Phase-2 demonstrator)
+# --------------------------------------------------------------------------- #
+if page == "Matchmaking":
+    st.subheader("Matchmaking (prototype)")
+    st.caption("Phase-2 demonstrator. It shows how a specific demolition routes to nearby recovery "
+               "and reuse firms, a working proof of the mechanic on the real ECCC directory, not a "
+               "live commercial exchange. CCC's role is to feed this signal to operators and partner "
+               "marketplaces, not to hold liquidity.")
+
+    stored = projects.projects_dataframe()
+    opts = ["Quick entry"] + (["From the project store"] if not stored.empty else [])
+    mode = st.radio("Material source", opts, horizontal=True)
+    if mode == "From the project store" and not stored.empty:
+        pick = st.selectbox("Project", stored["name"].tolist())
+        prow = stored[stored["name"] == pick].iloc[0]
+        site = {"name": pick, "cma": prow["cma"], "archetype": prow["archetype"],
+                "floor_area_m2": prow["floor_area_m2"], "year_built": prow["year_built"],
+                "recovery_method": prow["recovery_method"]}
+    else:
+        c1, c2, c3 = st.columns(3)
+        cma = c1.selectbox("CMA", cma_cfg.cma_names())
+        archetype = c2.selectbox("Archetype", list(reg["archetypes"].keys()),
+                                 format_func=lambda a: reg["archetypes"][a]["label"])
+        method = c3.selectbox("Recovery method", ["deconstruction", "mixed", "demolition"], index=1)
+        c4, c5 = st.columns(2)
+        floor_area = c4.number_input("Floor area (m2)", 20.0, 5000.0, 160.0, 10.0)
+        year_built = c5.number_input("Year built", 1850, 2026, 1955, 1)
+        site = {"name": "Quick entry", "cma": cma, "archetype": archetype,
+                "floor_area_m2": floor_area, "year_built": year_built, "recovery_method": method}
+
+    res = projects.analyze_project(site, reg)
+    prov = ecosystem.CMA_PROVINCE.get(site["cma"], "")
+    s1, s2, s3 = st.columns(3)
+    s1.metric("Predicted spec-ready", fmt_bf(res["spec_ready_bf"]))
+    s2.metric("Reclaimed value", fmt_cad(res["value_cad"]))
+    s3.metric("Carbon benefit", f"{carbon.total_benefit_t(res['spec_ready_bf']):,.1f} t CO2e")
+
+    st.markdown(f"#### Matched firms in {prov or 'province'}")
+    comp = ecosystem.company_table()
+    matches = comp[comp["province"] == prov].copy()
+    if matches.empty:
+        st.warning("No directory firms recorded in this province yet. The signal would route to the "
+                   "nearest out-of-province firms or a partner marketplace.")
+    else:
+        order = {"Recover": 0, "Process": 1, "Remake": 2, "Resell": 3, "Generate": 4}
+        matches["fit"] = matches["stages"].apply(lambda s: min((order.get(x, 9) for x in s), default=9))
+        matches["role"] = matches["stages"].apply(lambda s: ", ".join(s))
+        matches["activities"] = matches["activities"].apply(lambda a: ", ".join(a))
+        matches = matches.sort_values("fit")
+        st.dataframe(matches[["name", "role", "activities", "website"]].head(12),
+                     width="stretch", hide_index=True)
+        st.caption("Ranked by value-chain fit: recovery and processing first, since they can take "
+                   "the material, then remanufacture and resale. Province match from the ECCC "
+                   "directory (September 2024).")
+
+    if st.button("Register interest (prototype)"):
+        rec = projects.add_project(site, reg)
+        st.success(f"Logged to the project store as entry #{rec['id']}. On a persistent backend this "
+                   "would notify the matched firms; on the shared cloud demo the store is "
+                   "session-only.")
 
 
 # --------------------------------------------------------------------------- #
