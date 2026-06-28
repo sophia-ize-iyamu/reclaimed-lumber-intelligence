@@ -17,13 +17,13 @@ A live platform adds what the static layer can't deliver on its own:
 3. **Dynamic recovery forecasting.** Recompute the forecast as new permits,
    projects, and ecosystem actors enter the system.
 
-### Demand priming and the ecosystem (June 2026 direction)
+### Demand priming and the two-sided ecosystem
 
-Advisor feedback in June 2026 was that the supply side is solid and the work now
-needs the demand side and the full two-sided ecosystem. That reframing is built
-into the app: a real reclaimed-wood company directory, the national SME census,
-the circular value chain, demand segments, the economics, and a ranked diagnosis
-of why recoverable wood still isn't reclaimed.
+The supply estimate is only half the picture; the platform has to model the demand
+side and the full two-sided ecosystem. That is built into the app: a real
+reclaimed-wood company directory, the national SME census, the circular value
+chain, demand segments, the economics, and a ranked diagnosis of why recoverable
+wood still isn't reclaimed.
 
 The strategic read that follows from it: this isn't a marketplace and it isn't a
 supply problem. Latent demand already exceeds current spec-ready supply. What's
@@ -66,9 +66,9 @@ national data readiness.
 
 **Phase 2 (6 to 18 months): project intake at scale and the actor registry.**
 Open the project store to demolition and deconstruction contractors so they can
-register upcoming sites. Swap the synthetic actor table for a verified directory of
-processors, warehouses, and reuse buyers. At that point the gap analysis runs on
-real infrastructure data instead of placeholders.
+register upcoming sites. Extend the reclaimed-wood company directory into a
+verified, per-site registry of processors, warehouses, and reuse buyers. At that
+point the gap analysis runs on audited capacity rather than a province-level estimate.
 
 **Phase 3 (18 months and beyond): live matchmaking.** With real supply signals and
 a real actor registry in place, add matchmaking: notify the nearest processor and
@@ -125,5 +125,6 @@ data and network asset compounding underneath.
 - `degradation_per_decade` is weakly supported and reads better as a condition
   factor than a calendar-age factor, so it's kept small with a wide low bound.
 - Reclaimed value figures are indicative dealer prices rather than transaction-grade.
-- Ecosystem actors are synthetic placeholders. The gap analysis demonstrates the
-  method, and it isn't yet a real infrastructure audit.
+- The ecosystem uses the real ECCC company directory (September 2024) and the
+  national SME census (Light House, March 2026). Capacity is estimated at the
+  province level, so the gap analysis is not yet a verified per-site infrastructure audit.

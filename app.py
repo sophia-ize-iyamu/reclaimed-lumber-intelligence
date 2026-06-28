@@ -880,11 +880,106 @@ if page == "Embodied carbon":
 # 5. Platform roadmap
 # --------------------------------------------------------------------------- #
 if page == "Platform roadmap":
-    st.subheader("Deliverable 5: Coordination platform architecture & roadmap")
-    path = os.path.join(os.path.dirname(__file__), "docs", "platform_roadmap.md")
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            st.markdown(f.read())
+    st.subheader("Deliverable 5: From intelligence layer to coordination platform")
+    st.markdown("This app is the defensible intelligence layer. Deliverable 5 is how Circular "
+                "Construction Canada turns it into a live coordination platform: a phased build, a "
+                "build-versus-partner split, and a clean integration contract.")
+
+    phases = [
+        ("Phase 0", "now", "Defensible intelligence layer",
+         "This app. One live connector (Toronto), modelled coverage for 24 metros, a transparent "
+         "assumptions registry, and an honest void report. Buys credibility CCC can defend."),
+        ("Phase 1", "0 to 6 months", "Widen real coverage",
+         "Add machine-readable permit feeds (Vancouver, Ottawa, Calgary, Hamilton) behind the same "
+         "schema. Coverage tiers climb and confidence bands tighten on their own."),
+        ("Phase 2", "6 to 18 months", "Project intake and verified actors",
+         "Open the project store to contractors to register sites; verify the processor, warehouse "
+         "and buyer directory. Gap analysis runs on real infrastructure data."),
+        ("Phase 3", "18 months and beyond", "Live matchmaking",
+         "Notify the nearest processor and buyer when a high-yield demolition is permitted, and let "
+         "them claim the material. The coordination platform the brief envisions."),
+    ]
+    xs = [16, 196, 376, 556]
+    nodes = ""
+    for i, (ph, when, _t, _d) in enumerate(phases):
+        x = xs[i]
+        nodes += (f'<rect x="{x}" y="60" width="156" height="62" rx="11" class="vnode"/>'
+                  f'<text x="{x+78}" y="86" text-anchor="middle" class="vtext" font-size="14" font-weight="700">{ph}</text>'
+                  f'<text x="{x+78}" y="107" text-anchor="middle" class="vcount" font-family="JetBrains Mono, monospace" font-size="11">{when}</text>')
+        if i < 3:
+            nodes += f'<path d="M{x+156},91 L{xs[i+1]},91" class="vedge" marker-end="url(#ph)"/>'
+    rsvg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 728 150" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <style>
+    .vnode{{fill:#FFFFFF;stroke:#E2E7DE;stroke-width:1.5}} .vtext{{fill:#14532D}} .vcount{{fill:#2F7D4F}}
+    .vedge{{stroke:#2F7D4F;stroke-width:2;fill:none}} .vacc{{fill:#2F7D4F}} .vlbl{{fill:#2F7D4F}}
+    @media (prefers-color-scheme: dark){{
+      .vnode{{fill:#15151B;stroke:#2A2A31}} .vtext{{fill:#EAF3EC}} .vcount{{fill:#5CCF95}}
+      .vedge{{stroke:#4DB779}} .vacc{{fill:#4DB779}} .vlbl{{fill:#5CCF95}}
+    }}
+  </style>
+  <defs><marker id="ph" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" class="vacc"/></marker></defs>
+  <text x="364" y="28" text-anchor="middle" class="vlbl" font-family="JetBrains Mono, monospace" font-size="11">each connector lands behind one canonical schema, so the model stays put</text>
+  {nodes}
+</svg>'''
+    _b = base64.b64encode(rsvg.encode("utf-8")).decode()
+    st.markdown(f'<div style="max-width:820px;margin:2px auto 8px">'
+                f'<img alt="phased roadmap" style="width:100%" '
+                f'src="data:image/svg+xml;base64,{_b}"/></div>', unsafe_allow_html=True)
+
+    pc = st.columns(4)
+    for col, (ph, when, title, desc) in zip(pc, phases):
+        with col:
+            st.markdown(f"**{ph}**  \n*{when}*")
+            st.markdown(f"**{title}**")
+            st.caption(desc)
+
+    st.markdown("#### Build versus partner")
+    st.dataframe(pd.DataFrame([
+        {"Capability": "Canonical data model and assumptions registry", "Call": "Build",
+         "Why": "CCC's proprietary asset and the source of its credibility. Cannot be outsourced."},
+        {"Capability": "Permit ingestion connectors", "Call": "Build thin",
+         "Why": "Write a connector where a municipality publishes open data. Do not rebuild the municipal system."},
+        {"Capability": "Forecasting and gap-analysis engine", "Call": "Build",
+         "Why": "The method is the differentiator. Keep it in house and transparent."},
+        {"Capability": "Matchmaking marketplace", "Call": "Partner",
+         "Why": "Material-exchange marketplaces exist. Feed them supply signals instead of rebuilding liquidity."},
+        {"Capability": "Hosting and identity", "Call": "Partner",
+         "Why": "Commodity managed cloud. No reason to operate infrastructure."},
+    ]), width="stretch", hide_index=True)
+
+    st.markdown("#### Integration: the canonical schema is the contract")
+    i1, i2, i3 = st.columns(3)
+    with i1:
+        st.markdown("**Inbound**")
+        st.caption("Municipal open-data portals and provincial assessment data feed the canonical "
+                   "demolition and housing tables.")
+    with i2:
+        st.markdown("**Internal**")
+        st.caption("The assumptions registry and project store let CCC and partners correct and "
+                   "extend the model without touching code.")
+    with i3:
+        st.markdown("**Outbound**")
+        st.caption("A read API over the forecast and gap tables lets municipalities, funders and "
+                   "marketplaces consume the intelligence in their own tools.")
+
+    st.markdown("#### Two capabilities worth calling out")
+    j1, j2 = st.columns(2)
+    with j1:
+        st.markdown("**Predictable supply primes demand**")
+        st.caption("This is not a marketplace and not a supply shortage. Latent demand already "
+                   "exceeds spec-ready supply. What is missing is a forward signal so buyers can "
+                   "commit before material physically exists. The analogy is air traffic control, "
+                   "not a listings site.")
+    with j2:
+        st.markdown("**Machine vision for yield prediction**")
+        st.caption("A permit gives an address and a date. Machine vision turns building imagery and "
+                   "the archetype schema into predicted species, dimensions, condition and board "
+                   "footage, closing the inference gap at scale. A Phase 2 to 3 capability.")
+
+    st.info("What makes it durable: the moat is the canonical dataset and the network of "
+            "corrections that accumulates as municipalities, contractors and buyers use it. The "
+            "same method extends from lumber to other reclaimed materials, with the data and "
+            "network compounding underneath.")
 
 
 # --------------------------------------------------------------------------- #
