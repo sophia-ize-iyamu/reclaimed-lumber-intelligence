@@ -10,7 +10,7 @@ dashboard can override any editable value at runtime. Ranges are what make the
 confidence bands honest: they propagate coefficient uncertainty, not just data
 coverage.
 
-Key reconciliation note: the wood literature (McKee & McKeever, FPL 1994)
+Key reconciliation note: the wood literature (McKeever & Phelps, FPL 1994)
 measures FRAMING (dimensional) lumber per unit floor area directly. So
 `framing_bf_per_m2` already is the structural dimensional lumber in the building.
 The recovery cascade operates on that. `dimensional_share_of_total` is used only
@@ -49,7 +49,7 @@ def rng(x):
 ARCHETYPES = {
     "sfd_prewar": {
         "label": "Single-family detached, pre-1946",
-        "framing_bf_per_m2": C(85, 75, 100, "bf/m2", "Falk FPL 2012 + McKee 1994",
+        "framing_bf_per_m2": C(85, 75, 100, "bf/m2", "Falk FPL 2013 + McKeever 1994",
                                "https://www.fpl.fs.usda.gov/documnts/pdf2013/fpl_2013_falk001.pdf",
                                "Older homes use heavier full-dimension solid-sawn members."),
         "floor_area_m2": C(115, 95, 140, "m2", "MPAC Ontario 2024",
@@ -61,7 +61,7 @@ ARCHETYPES = {
     },
     "sfd_postwar": {
         "label": "Single-family detached, 1946-1980",
-        "framing_bf_per_m2": C(79, 75, 86, "bf/m2", "McKee & McKeever FPL 1994",
+        "framing_bf_per_m2": C(79, 75, 86, "bf/m2", "McKeever & Phelps FPL 1994",
                                "https://www.fpl.fs.usda.gov/documnts/pdf1994/mckee94a.pdf",
                                "Measured 7.28-7.51 bf/ft2 of finished floor area."),
         "floor_area_m2": C(120, 110, 135, "m2", "MPAC Ontario 2024",
@@ -72,7 +72,7 @@ ARCHETYPES = {
     },
     "sfd_modern": {
         "label": "Single-family detached, 1981-2000",
-        "framing_bf_per_m2": C(80, 72, 85, "bf/m2", "McKee & McKeever FPL 1994",
+        "framing_bf_per_m2": C(80, 72, 85, "bf/m2", "McKeever & Phelps FPL 1994",
                                "https://www.fpl.fs.usda.gov/documnts/pdf1994/mckee94a.pdf",
                                "Lumber/ft2 roughly flat to 1990 before engineered substitution."),
         "floor_area_m2": C(175, 150, 195, "m2", "MPAC Ontario 2024",
@@ -116,7 +116,7 @@ COHORT_TO_ARCHETYPE = {
 
 # Fraction of total wood content that is dimensional framing (framing -> total).
 DIMENSIONAL_SHARE_OF_TOTAL = C(
-    0.78, 0.65, 0.85, "fraction", "McKee 1994 volume math; Oregon DEQ 2019",
+    0.78, 0.65, 0.85, "fraction", "McKeever 1994 volume math; Oregon DEQ 2019",
     "https://www.oregon.gov/deq/FilterDocs/DeconstructionReport.pdf",
     "Used to gross framing lumber up to total wood content for the headline.",
     editable=False)

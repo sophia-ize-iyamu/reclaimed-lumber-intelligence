@@ -11,11 +11,16 @@ uncertainty in those coefficients flows through to every number on screen.
 
 ## What makes it defensible
 
-- **Sourced coefficients.** Wood content from McKee & McKeever (USDA FPL, 1994)
-  and Falk (FPL, 2012); recovery and grading yields from Oregon DEQ (2019) and
+- **Sourced coefficients.** Wood content from McKeever & Phelps (USDA FPL, 1994)
+  and Falk (FPL, 2013); recovery and grading yields from Oregon DEQ (2019) and
   Falk FPL-RP-650 (2008); demolition rates and housing stock from StatCan 2021
   Census and the Building Permits Survey; reclaimed value from dealer price guides.
-  Full provenance with ranges sits in `docs/SOURCES.md`.
+  Full provenance with month-and-year dates sits in `docs/SOURCES.md`, and the
+  freely shareable source PDFs are bundled in `docs/sources/`.
+- **Real demand side and ecosystem.** A directory of 58 named reclaimed-wood
+  companies (ECCC, September 2024) and the national census of 252 SMEs (Light House
+  for ECCC, March 2026), plus demand segments, economics, and a ranked diagnosis of
+  why recoverable wood is not reclaimed.
 - **Real data where it exists.** Toronto demolition permits are pulled live from
   Toronto Open Data (counted by year, with the incomplete recent years dropped).
   CMA populations, dwelling counts, and (for the six largest CMAs) housing-stock
@@ -30,7 +35,7 @@ uncertainty in those coefficients flows through to every number on screen.
   Recovery method (deconstruction against demolition) dominates, which points CCC
   straight at its highest-leverage policy lever.
 
-## The five deliverables (tabs)
+## The pages
 
 1. **Municipal baseline.** City-wide estimate per market from demolition activity,
    real housing-stock age, and building archetype, with a recovery cascade and value.
@@ -39,9 +44,14 @@ uncertainty in those coefficients flows through to every number on screen.
    demolitions.
 3. **Forecast & uncertainty.** 5-10 year projection, Monte Carlo P10/P50/P90, and the
    sensitivity tornado.
-4. **Ecosystem & gaps.** Supply chain mapped against supply, flagging weak-capacity
-   markets.
-5. **Platform roadmap.** Build-versus-partner blueprint (`docs/platform_roadmap.md`).
+4. **Ecosystem & gaps.** The real reclaimed-wood ecosystem: a circular value-chain
+   graph, the company directory and province map, recovery pathways (recycling,
+   downcycling, upcycling), and a province-level gap analysis.
+5. **Demand & economics.** Demand segments (legal today vs code-gated), the
+   supply-versus-demand balance, the economics, and why recoverable wood is not
+   reclaimed.
+6. **Platform roadmap.** Build-versus-partner blueprint, demand priming, and the
+   machine-vision yield-prediction path (`docs/platform_roadmap.md`).
 
 It also carries an editable **assumptions registry** (with ranges and sources), a
 persistent **project store**, a **sources & void** view, and **scenario toggles**

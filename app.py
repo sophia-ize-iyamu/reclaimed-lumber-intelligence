@@ -22,6 +22,7 @@ import streamlit as st
 
 from config import assumptions as A
 from config import cmas as cma_cfg
+from config import companies, demand
 from config.assumptions import val
 from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty
 
@@ -173,13 +174,13 @@ def run_pipeline(overrides_signature, allow_network, scenario_key):
     supply = model.estimate_supply(demo, reg)
     summary = model.cma_summary(supply)
     fcast = forecast.project_supply(summary, reg)
-    actors = ecosystem.build_actor_table()
-    gaps = ecosystem.gap_analysis(summary, actors)
+    gaps = ecosystem.gap_analysis(summary)
     void = ingest.void_report(demo)
     mc_cma, mc_nat = uncertainty.monte_carlo(summary, reg)
     tor = uncertainty.tornado(summary, reg)
+    restores = ecosystem.refresh_restores(allow_network)
     return {"demo": demo, "supply": supply, "summary": summary, "forecast": fcast,
-            "actors": actors, "gaps": gaps, "void": void,
+            "gaps": gaps, "void": void, "restores": restores,
             "mc_cma": mc_cma, "mc_nat": mc_nat, "tornado": tor}
 
 
@@ -213,8 +214,9 @@ st.sidebar.title("Reclaimed Lumber Intelligence")
 st.sidebar.caption("Circular Construction Canada")
 
 PAGES = ["Overview", "Municipal baseline", "Hotspots & archetypes",
-         "Forecast & uncertainty", "Ecosystem & gaps", "Platform roadmap",
-         "Projects", "Assumptions", "Sources & void", "How it works"]
+         "Forecast & uncertainty", "Ecosystem & gaps", "Demand & economics",
+         "Platform roadmap", "Projects", "Assumptions", "Sources & void",
+         "How it works"]
 page = st.sidebar.radio("Navigate", PAGES, label_visibility="collapsed")
 
 st.sidebar.markdown("---")
@@ -225,7 +227,7 @@ scenario_key = st.sidebar.selectbox(
 st.sidebar.caption(_scenarios[scenario_key]["note"])
 
 allow_network = st.sidebar.toggle(
-    "Use live Toronto Open Data", value=False,
+    "Use live open-data feeds", value=False,
     help="Pull real Toronto demolition permits by year (offline fallback if unreachable).")
 st.sidebar.caption("Every coefficient is sourced. See the Sources & void section.")
 
@@ -249,7 +251,7 @@ if scenario_key != "baseline":
 # --------------------------------------------------------------------------- #
 # Overview
 # --------------------------------------------------------------------------- #
-if page == PAGES[0]:
+if page == "Overview":
     st.markdown("""
     <div class="hero">
       <div class="hero-eyebrow">Circular Construction Canada</div>
@@ -307,7 +309,7 @@ if page == PAGES[0]:
 # --------------------------------------------------------------------------- #
 # 1. Municipal baseline
 # --------------------------------------------------------------------------- #
-if page == PAGES[1]:
+if page == "Municipal baseline":
     st.subheader("Deliverable 1: Municipal demolition & housing-stock baseline")
     st.markdown("First-order, city-wide estimate of salvageable wood per market, "
                 "built from demolition activity, real StatCan housing-stock age, and "
@@ -355,7 +357,7 @@ if page == PAGES[1]:
 # --------------------------------------------------------------------------- #
 # 2. Hotspots & archetypes
 # --------------------------------------------------------------------------- #
-if page == PAGES[2]:
+if page == "Hotspots & archetypes":
     st.subheader("Deliverable 2: Neighbourhood hotspots & archetype refinement")
     st.markdown("Demolition clusters in specific neighbourhoods and repeatable building "
                 "types. Toronto is the worked example. Its real permit data shows "
@@ -394,7 +396,7 @@ if page == PAGES[2]:
 # --------------------------------------------------------------------------- #
 # 3. Forecast + uncertainty
 # --------------------------------------------------------------------------- #
-if page == PAGES[3]:
+if page == "Forecast & uncertainty":
     st.subheader("Deliverable 3: Material flow forecast with propagated uncertainty")
     fcast = data["forecast"]
     metric = st.selectbox(
@@ -475,40 +477,169 @@ if page == PAGES[3]:
 # --------------------------------------------------------------------------- #
 # 4. Ecosystem & gaps
 # --------------------------------------------------------------------------- #
-if page == PAGES[4]:
-    st.subheader("Deliverable 4: Ecosystem actor map & gap analysis")
-    st.markdown("The circular lumber supply chain mapped against supply. Flags markets "
-                "with strong supply but weak recovery or storage capacity.")
-    gaps = data["gaps"]
-    actors = data["actors"]
-    n_gap = (~gaps["gap_flag"].isin(["Adequate", "No modelled supply"])).sum()
-    g1, g2, g3 = st.columns(3)
-    g1.metric("CMAs analyzed", len(gaps))
-    g2.metric("Markets with a flagged gap", int(n_gap))
-    g3.metric("Total mapped actors", len(actors))
-    gshow = gaps.copy()
-    gshow["recoverable"] = gshow["recoverable_bf"].map(fmt_bf)
-    gshow["processing_cap"] = gshow["processing_capacity_bf_yr"].map(fmt_bf)
-    gshow["capacity_ratio"] = gshow["capacity_ratio"].map(lambda x: f"{x:.2f}")
-    st.dataframe(gshow[["cma", "coverage_tier", "recoverable", "processing_cap",
-                        "capacity_ratio", "deconstruction", "processor", "warehouse",
-                        "reuse_buyer", "gap_flag"]], width="stretch", hide_index=True)
-    st.caption("capacity_ratio = (processing and storage throughput) / recoverable supply. "
-               "Actor counts are synthetic placeholders demonstrating the method; the gap "
-               "logic runs unchanged on a real actor directory.")
-    cma_pick = st.selectbox("Actor map for CMA", cma_cfg.cma_names(), key="actor_cma")
-    asub = actors[actors["cma"] == cma_pick]
-    if len(asub):
-        fig = px.scatter_geo(asub, lat="lat", lon="lon", color="actor_type",
-                             hover_name="name", scope="north america")
+if page == "Ecosystem & gaps":
+    st.subheader("Deliverable 4: The reclaimed-wood ecosystem")
+    st.markdown("Circularity is two-sided: the buildings that generate waste wood, and the firms "
+                "that recover, process, remake, retail, recycle, downcycle and upcycle it. This maps "
+                "the real ecosystem from the ECCC company directory (September 2024) and the national "
+                "SME census (Light House for ECCC, March 2026).")
+
+    comp = ecosystem.company_table()
+    restore_count, restore_src, restore_live = data["restores"]
+    e1, e2, e3, e4 = st.columns(4)
+    e1.metric("Named companies", f"{len(comp)}")
+    e2.metric("National SMEs (census)", f"{companies.NATIONAL_SME_TOTAL}")
+    e3.metric("Habitat ReStores", f"{restore_count}")
+    e4.metric("Provinces covered", f"{comp['province'].nunique()}")
+    st.caption(f"ReStore count source: {restore_src}. Turn on the sidebar feed toggle to refresh "
+               "it live; the named directory falls back to the dated ECCC snapshot either way.")
+
+    st.markdown("#### The circular value chain")
+    sc = ecosystem.stage_counts_national()
+    xs = [16, 160, 304, 448, 592]
+    nodes = ""
+    for i, stg in enumerate(companies.VALUE_CHAIN):
+        x = xs[i]
+        nodes += (f'<rect x="{x}" y="70" width="120" height="58" rx="11" class="vnode"/>'
+                  f'<text x="{x+60}" y="95" text-anchor="middle" class="vtext" font-size="13" font-weight="700">{stg}</text>'
+                  f'<text x="{x+60}" y="116" text-anchor="middle" class="vcount" font-family="JetBrains Mono, monospace" font-size="12">{sc[stg]} firms</text>')
+        if i < 4:
+            nodes += f'<path d="M{x+120},99 L{xs[i+1]},99" class="vedge" marker-end="url(#vh)"/>'
+    vsvg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 728 165" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <style>
+    .vnode{{fill:#FFFFFF;stroke:#E2E7DE;stroke-width:1.5}} .vtext{{fill:#14532D}} .vcount{{fill:#2F7D4F}}
+    .vedge{{stroke:#2F7D4F;stroke-width:2;fill:none}} .vacc{{fill:#2F7D4F}} .vloop{{stroke:#2F7D4F;stroke-width:1.6;fill:none;stroke-dasharray:5 4}} .vlbl{{fill:#2F7D4F}}
+    @media (prefers-color-scheme: dark){{
+      .vnode{{fill:#15151B;stroke:#2A2A31}} .vtext{{fill:#EAF3EC}} .vcount{{fill:#5CCF95}}
+      .vedge{{stroke:#4DB779}} .vacc{{fill:#4DB779}} .vloop{{stroke:#4DB779}} .vlbl{{fill:#5CCF95}}
+    }}
+  </style>
+  <defs><marker id="vh" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" class="vacc"/></marker></defs>
+  <path d="M652,70 L652,26 L76,26 L76,70" class="vloop" marker-end="url(#vh)"/>
+  <text x="364" y="20" text-anchor="middle" class="vlbl" font-family="JetBrains Mono, monospace" font-size="11">reuse closes the loop</text>
+  {nodes}
+</svg>'''
+    _b = base64.b64encode(vsvg.encode("utf-8")).decode()
+    st.markdown(f'<div style="max-width:760px;margin:2px auto 6px">'
+                f'<img alt="circular value chain" style="width:100%" '
+                f'src="data:image/svg+xml;base64,{_b}"/></div>', unsafe_allow_html=True)
+    st.caption("Firm counts are the national SME census by value-chain step (Light House, March "
+               "2026). Retail dominates because it includes 102 Habitat for Humanity ReStores.")
+
+    st.markdown("#### Company directory")
+    all_acts = sorted({a for c in companies.list_companies() for a in c["activities"]})
+    f1, f2 = st.columns(2)
+    prov_pick = f1.multiselect("Province", sorted(comp["province"].unique()))
+    act_pick = f2.multiselect("Activity", all_acts)
+    view = comp.copy()
+    if prov_pick:
+        view = view[view["province"].isin(prov_pick)]
+    if act_pick:
+        view = view[view["activities"].apply(lambda acts: any(a in acts for a in act_pick))]
+    show = view.copy()
+    show["activities"] = show["activities"].apply(lambda a: ", ".join(a))
+    show["stages"] = show["stages"].apply(lambda a: ", ".join(a))
+    colA, colB = st.columns([3, 2])
+    with colA:
+        st.dataframe(show[["name", "province", "activities", "stages", "website"]],
+                     width="stretch", hide_index=True, height=360)
+    with colB:
+        prov_counts = comp.groupby("province").size().reset_index(name="companies")
+        prov_counts["lat"] = prov_counts["province"].map(lambda p: companies.PROVINCE_CENTROID[p][0])
+        prov_counts["lon"] = prov_counts["province"].map(lambda p: companies.PROVINCE_CENTROID[p][1])
+        fig = px.scatter_geo(prov_counts, lat="lat", lon="lon", size="companies",
+                             color="companies", color_continuous_scale="Greens",
+                             hover_name="province", scope="north america", size_max=34)
         style_geo(fig, 360)
+        fig.update_coloraxes(showscale=False)
         st.plotly_chart(fig, width="stretch")
+
+    st.markdown("#### Recovery pathways (recycling, downcycling, upcycling and more)")
+    ac = ecosystem.activity_counts()
+    fig = px.bar(ac, x="companies", y="activity", orientation="h",
+                 labels={"companies": "named companies", "activity": ""})
+    fig.update_traces(marker_color=ACCENT)
+    fig.update_layout(yaxis=dict(autorange="reversed"))
+    style_chart(fig, 320)
+    st.plotly_chart(fig, width="stretch")
+
+    st.markdown("#### Gap analysis: supply against the in-province ecosystem")
+    gaps = data["gaps"]
+    n_gap = (gaps["gap_flag"] != "Workable base").sum()
+    g1, g2 = st.columns(2)
+    g1.metric("CMAs analyzed", len(gaps))
+    g2.metric("Markets flagged thin or under-served", int(n_gap))
+    gshow = gaps.copy()
+    gshow["spec_ready"] = gshow["spec_ready_bf"].map(fmt_bf)
+    gshow["bf per SME"] = gshow["bf_per_sme"].map(lambda x: fmt_bf(x) if x != float("inf") else "n/a")
+    st.dataframe(gshow[["cma", "province", "spec_ready", "province_smes", "bf per SME", "gap_flag"]],
+                 width="stretch", hide_index=True)
+    st.caption("Province SME counts come from the national census of 252 scaled by the Light House "
+               "provincial distribution. A market is flagged where supply is high relative to the "
+               "recovery and processing firms operating in its province.")
+
+
+# --------------------------------------------------------------------------- #
+# Demand & economics
+# --------------------------------------------------------------------------- #
+if page == "Demand & economics":
+    st.subheader("Demand side and economics")
+    st.markdown("The supply model says how much reusable lumber appears. This answers the harder "
+                "question the feedback raised: who buys it, what it's worth, and why so much "
+                "recoverable wood still isn't reclaimed.")
+
+    dem = pd.DataFrame(demand.demand_table())
+    spec_ready = data["summary"]["spec_ready_bf"].sum()
+    ta, tb = demand.tier_a_total(), demand.tier_b_total()
+    d1, d2, d3 = st.columns(3)
+    d1.metric("Spec-ready supply (model, base yr)", fmt_bf(spec_ready))
+    d2.metric("Demand legal today (Tier A)", fmt_bf(ta))
+    d3.metric("Demand if code allows reuse (Tier B)", fmt_bf(tb))
+    st.info("Latent demand dwarfs current spec-ready supply, so the binding constraint is supply "
+            "and coordination, not appetite. Visible demand stays small because buyers cannot "
+            "commit to material they cannot see coming. That is the gap this layer targets.")
+
+    st.markdown("#### Demand by segment")
+    dshow = dem.copy()
+    dshow["tier"] = dshow["tier"].map({"A": "A: legal today", "B": "B: needs code change"})
+    dshow["point"] = dshow["point_bf"]
+    fig = px.bar(dshow, x="point", y="segment", orientation="h", color="tier",
+                 color_discrete_map={"A: legal today": ACCENT, "B: needs code change": "#9A9A92"},
+                 labels={"point": "demand absorption (bf/yr)", "segment": "", "tier": ""})
+    fig.update_layout(yaxis=dict(autorange="reversed"), legend=dict(orientation="h", y=1.08))
+    style_chart(fig, 460)
+    st.plotly_chart(fig, width="stretch")
+    seg_tbl = dem.copy()
+    seg_tbl["absorption"] = seg_tbl.apply(lambda r: f"{fmt_bf(r['low_bf'])} - {fmt_bf(r['high_bf'])}", axis=1)
+    seg_tbl["tier"] = seg_tbl["tier"].map({"A": "legal today", "B": "needs code change"})
+    st.dataframe(seg_tbl[["segment", "tier", "absorption", "note"]],
+                 width="stretch", hide_index=True)
+
+    st.markdown("#### Economics")
+    ec = demand.ECONOMICS
+    rp = ec["reclaimed_premium"]; dp = ec["deconstruction_premium"]
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Reclaimed price premium", f"{int(rp[0]*100)}-{int(rp[2]*100)}%", "over virgin", delta_color="off")
+    m2.metric("Deconstruction cost premium", f"{int(dp[0]*100)}-{int(dp[2]*100)}%", "over demolition", delta_color="off")
+    m3.metric("Salvage value, Metro Vancouver", "$342M/yr", "2020", delta_color="off")
+    st.caption("Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. "
+               "Sources: Light House SME report (March 2026); Vancouver Economic Commission, "
+               "Unbuilders & BCIT, Business Case for Deconstruction (July 2020).")
+
+    st.markdown("#### Why recoverable wood is not reclaimed")
+    bt = pd.DataFrame(demand.BOTTLENECKS)
+    bt = bt.rename(columns={"rank": "#", "name": "bottleneck", "side": "binds on", "note": "explanation"})
+    st.dataframe(bt[["#", "bottleneck", "binds on", "explanation"]],
+                 width="stretch", hide_index=True)
+    st.caption("Ranked by severity. The largest demand tier (structural reuse) is capped by code "
+               "before economics even apply, and the next constraint is the missing forward supply "
+               "signal, which is exactly what a predictive layer supplies.")
 
 
 # --------------------------------------------------------------------------- #
 # 5. Platform roadmap
 # --------------------------------------------------------------------------- #
-if page == PAGES[5]:
+if page == "Platform roadmap":
     st.subheader("Deliverable 5: Coordination platform architecture & roadmap")
     path = os.path.join(os.path.dirname(__file__), "docs", "platform_roadmap.md")
     if os.path.exists(path):
@@ -519,7 +650,7 @@ if page == PAGES[5]:
 # --------------------------------------------------------------------------- #
 # Projects
 # --------------------------------------------------------------------------- #
-if page == PAGES[6]:
+if page == "Projects":
     st.subheader("Project store: add a specific demolition project")
     st.markdown("Layer real projects onto the baseline. Each is scored with the same "
                 "sourced cascade and saved persistently.")
@@ -561,7 +692,7 @@ if page == PAGES[6]:
 # --------------------------------------------------------------------------- #
 # Assumptions
 # --------------------------------------------------------------------------- #
-if page == PAGES[7]:
+if page == "Assumptions":
     st.subheader("Assumptions registry (sourced)")
     st.markdown("Every coefficient, its plausible range, and its source. Move a slider and "
                 "every figure across the app updates. Ranges feed the Monte Carlo model.")
@@ -610,7 +741,7 @@ if page == PAGES[7]:
 # --------------------------------------------------------------------------- #
 # Sources & void
 # --------------------------------------------------------------------------- #
-if page == PAGES[8]:
+if page == "Sources & void":
     st.subheader("Sources registry & void / coverage analysis")
     st.markdown("What data is real, what is modelled, and where the gaps are. Coverage "
                 "tier drives the demolition-count uncertainty in the Monte Carlo model.")
@@ -637,7 +768,7 @@ if page == PAGES[8]:
 # --------------------------------------------------------------------------- #
 # How it works (native walkthrough)
 # --------------------------------------------------------------------------- #
-if page == PAGES[9]:
+if page == "How it works":
     st.subheader("How it works: sourcing to output")
     st.markdown("How the app turns open data and sourced coefficients into a "
                 "confidence-scored estimate of salvageable lumber across Canada's 25 "
@@ -658,6 +789,8 @@ if page == PAGES[9]:
             "P10 / P50 / P90 bands", "Tornado: the lever that matters"]),
         ("05", "Outputs", ["5 to 10 year forecast", "Maps and gap analysis",
             "Value and scenarios", "Platform roadmap"]),
+        ("06", "Demand & ecosystem", ["Real reclaimed-wood company directory",
+            "Demand segments and economics", "Why recoverable wood is not reclaimed"]),
     ]
     _badge = ("font-family:'JetBrains Mono',monospace;background:var(--gold);color:#fff;"
               "border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600")
@@ -678,10 +811,20 @@ if page == PAGES[9]:
         c.metric(lab, v)
     st.caption("Coefficients applied in order: framing 79 bf/m2; structural recovery x0.30 and "
                "age-adjusted condition x0.73; denailing and sort x0.70; grading x0.55; "
-               "value $4.80/bf. Sources: McKee & McKeever FPL 1994; Oregon DEQ 2019; "
+               "value $4.80/bf. Sources: McKeever & Phelps FPL 1994; Oregon DEQ 2019; "
                "Falk FPL-RP-650. Gross wood content including panels and finish is 11,911 bf.")
 
-    st.markdown("#### Decision: live data or fallback")
+    st.markdown("#### The two-sided picture: supply meets demand")
+    st.caption("The supply model is half the story. The Ecosystem and Demand pages add the firms "
+               "that recover and remake wood, and the markets that buy it.")
+    w1, w2, w3, w4 = st.columns(4)
+    w1.metric("Named companies", f"{len(companies.list_companies())}")
+    w2.metric("National SMEs", f"{companies.NATIONAL_SME_TOTAL}")
+    w3.metric("Demand legal today", fmt_bf(demand.tier_a_total()))
+    w4.metric("Demand if reuse is allowed", fmt_bf(demand.tier_b_total()))
+    st.caption("Latent demand runs well above current spec-ready supply, so the binding constraint "
+               "is supply and coordination. The top blocker is the structural-reuse code wall, and "
+               "the next is the missing forward supply signal that this layer provides.")
     svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 690" font-family="Inter, Segoe UI, Arial, sans-serif">
   <style>
     .term{fill:#14532D} .termtx{fill:#ffffff} .dia{fill:none;stroke:#CBD5C9;stroke-width:1.5}

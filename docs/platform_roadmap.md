@@ -17,6 +17,39 @@ A live platform adds what the static layer can't deliver on its own:
 3. **Dynamic recovery forecasting.** Recompute the forecast as new permits,
    projects, and ecosystem actors enter the system.
 
+### Demand priming and the ecosystem (June 2026 direction)
+
+Advisor feedback in June 2026 was that the supply side is solid and the work now
+needs the demand side and the full two-sided ecosystem. That reframing is built
+into the app: a real reclaimed-wood company directory, the national SME census,
+the circular value chain, demand segments, the economics, and a ranked diagnosis
+of why recoverable wood still isn't reclaimed.
+
+The strategic read that follows from it: this isn't a marketplace and it isn't a
+supply problem. Latent demand already exceeds current spec-ready supply. What's
+missing is a forward supply signal, so buyers can commit to material before it
+physically exists. The closest analogy is air traffic control rather than a
+listings site: shared advance intelligence that lets independent operators
+coordinate. Predictable supply primes demand that unpredictable supply cannot.
+
+The deconstructor is the real customer, because the recover-versus-downcycle
+decision is theirs, and demand assurance is what tips it toward recovery.
+
+### Machine vision and the yield-prediction problem
+
+A permit gives an address and a date. Turning that into a usable forecast means
+predicting what the building contains: species, dimensions, condition, and board
+footage. Machine vision is the path to closing that inference gap at scale:
+
+- Estimate recoverable yield from building imagery (street view, listing photos,
+  permit drawings) keyed to the building archetype.
+- Map defects (checks, knots, fastener holes) to grade reclaimed boards for
+  mass-timber feedstock without shredding.
+- Build a digital twin of irregular stock and match cut plans against it.
+
+This is a Phase 2 to Phase 3 capability. The attributes-and-archetypes model
+already in the app is the schema it would feed.
+
 ### Phased roadmap
 
 **Phase 0 (now): defensible intelligence layer.** This app. One real connector
