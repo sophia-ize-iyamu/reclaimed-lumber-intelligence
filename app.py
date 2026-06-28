@@ -393,6 +393,8 @@ if page == "Overview":
       <div class="hero-rule"></div>
     </div>
     """, unsafe_allow_html=True)
+    banner("hero.jpg", "Reclaimed wood")
+    cap("Reclaimed wood: abundant in Canada's building stock, and the focus of this layer.")
     nat = data["mc_nat"]
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Gross wood content", fmt_bf(summary["gross_bf"].sum()))
@@ -450,8 +452,6 @@ if page == "Overview":
         "<b>medium</b> (amber) = real StatCan demolition figure with the cohort split modelled, "
         "about +/-25% (5 metros); "
         "<b>low</b> (red) = inferred from dwellings x a sourced rate, about +/-45% (the other 19).")
-    banner("hero.jpg", "Reclaimed wood")
-    cap("Reclaimed wood: abundant in Canada's building stock, and the focus of this layer.")
 
 
 # --------------------------------------------------------------------------- #
