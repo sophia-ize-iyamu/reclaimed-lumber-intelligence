@@ -234,6 +234,22 @@ def cap(text):
         f"margin:0.1rem 0 0.5rem'>{text}</p>", unsafe_allow_html=True)
 
 
+_IMG_DIR = os.path.join(os.path.dirname(__file__), "assets", "img")
+
+
+def banner(name, alt=""):
+    """Render a content image as a full-width rounded banner (CC0 imagery)."""
+    p = os.path.join(_IMG_DIR, name)
+    if not os.path.exists(p):
+        return
+    with open(p, "rb") as f:
+        b = base64.b64encode(f.read()).decode()
+    st.markdown(
+        f'<img src="data:image/jpeg;base64,{b}" alt="{alt}" '
+        f'style="width:100%;border-radius:12px;margin:0.1rem 0 0.5rem;display:block" />',
+        unsafe_allow_html=True)
+
+
 TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
 # Confidence score per market, derived from data-coverage tier (mirrors the
 # Monte Carlo bands: high +/-15%, medium +/-25%, low +/-45%).
@@ -355,6 +371,7 @@ if scenario_key != "baseline":
 # Overview
 # --------------------------------------------------------------------------- #
 if page == "Overview":
+    banner("hero.jpg", "Reclaimed wood")
     st.markdown("""
     <div class="hero">
       <div class="hero-eyebrow">Circular Construction Canada</div>
@@ -432,6 +449,8 @@ if page == "Municipal baseline":
     st.markdown("First-order, city-wide estimate of salvageable wood per market, "
                 "built from demolition activity, real StatCan housing-stock age, and "
                 "building archetype.")
+    banner("supply.jpg", "Demolition site")
+    cap("Demolition is where the recoverable wood stream begins.")
     supply = data["supply"]
     sel = st.selectbox("CMA", cma_cfg.cma_names())
     rec = cma_cfg.get_cma(sel)
@@ -609,6 +628,8 @@ if page == "Ecosystem":
                 "that recover, process, remake, retail, recycle, downcycle and upcycle it. This maps "
                 "the real ecosystem from the ECCC company directory (September 2024) and the national "
                 "SME census (Light House for ECCC, March 2026).")
+    banner("ecosystem.jpg", "Reclaimed wood workshop")
+    cap("Recovery, processing and remanufacturing firms turn salvage into spec-ready stock.")
 
     comp = ecosystem.company_table()
     restore_count, restore_src, restore_live = data["restores"]
@@ -803,6 +824,8 @@ if page == "Demand segments":
     st.markdown("The supply model says how much reusable lumber appears. This answers the harder "
                 "question the feedback raised: who buys it, what it's worth, and why so much "
                 "recoverable wood still isn't reclaimed.")
+    banner("demand.jpg", "Reclaimed wood interior")
+    cap("Reclaimed wood in use: hospitality and interiors are among the largest applications.")
 
     dem = pd.DataFrame(demand.demand_table())
     spec_ready = data["summary"]["spec_ready_bf"].sum()
@@ -969,7 +992,10 @@ if page == "Demand drivers":
 if page == "Economics":
     st.subheader("Economics and why reuse stalls")
     st.markdown("Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. "
-                "This is the economics behind the supply leak, and the constraints that hold it back.")
+                "This is the economics behind why so little is recovered, and the constraints that "
+                "hold it back.")
+    banner("economics.jpg", "Construction site")
+    cap("Deconstruction is labour-intensive, which raises its cost but also creates more jobs.")
     st.markdown("#### Economics")
     ec = demand.ECONOMICS
     rp = ec["reclaimed_premium"]; dp = ec["deconstruction_premium"]
