@@ -164,6 +164,17 @@ div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-var
 [data-testid="stSidebar"] details summary p,
 [data-testid="stSidebar"] details summary span,
 [data-testid="stSidebar"] details summary div { color: var(--gold-text); font-weight: 700; }
+
+/* Markdown tables (e.g. the SOURCES.md source list) must always fit their container,
+   wrapping long URLs rather than spilling off the page. */
+[data-testid="stMarkdownContainer"] table {
+  width: 100% !important; table-layout: fixed; border-collapse: collapse;
+}
+[data-testid="stMarkdownContainer"] th,
+[data-testid="stMarkdownContainer"] td {
+  overflow-wrap: anywhere; word-break: break-word; white-space: normal; vertical-align: top;
+}
+[data-testid="stMarkdownContainer"] td a { overflow-wrap: anywhere; word-break: break-all; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -378,7 +389,6 @@ if page == "Overview":
     st.markdown("""
     <div class="hero">
       <div class="hero-title">Reclaimed Lumber Intelligence Layer</div>
-      <div class="hero-eyebrow">Circular Construction Canada</div>
       <div class="hero-sub">Where salvageable lumber will emerge across Canada's 25 largest metro
       regions, what it's worth, what recovery capacity exists, and where the bottlenecks are.
       Every coefficient is sourced, and the uncertainty carries through to every number.</div>
