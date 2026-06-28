@@ -1052,7 +1052,7 @@ if page == "Platform roadmap":
         {"Capability": "Forecasting and gap-analysis engine", "Call": "Build",
          "Why": "The method is the differentiator. Keep it in house and transparent."},
         {"Capability": "Matchmaking marketplace", "Call": "Partner",
-         "Why": "Material-exchange marketplaces exist. Feed them supply signals instead of rebuilding liquidity."},
+         "Why": "Material-exchange marketplaces exist. Send them supply signals instead of rebuilding a marketplace."},
         {"Capability": "Hosting and identity", "Call": "Partner",
          "Why": "Commodity managed cloud. No reason to operate infrastructure."},
     ]), width="stretch", hide_index=True)
@@ -1075,21 +1075,21 @@ if page == "Platform roadmap":
     st.markdown("#### Two capabilities worth calling out")
     j1, j2 = st.columns(2)
     with j1:
-        st.markdown("**Predictable supply primes demand**")
-        cap("This is not a marketplace and not a supply shortage. Latent demand already "
-                   "exceeds spec-ready supply. What is missing is a forward signal so buyers can "
-                   "commit before material physically exists. The analogy is air traffic control, "
-                   "not a listings site.")
+        st.markdown("**Predictable supply lets buyers commit**")
+        cap("This is a coordination gap rather than a supply shortage. Latent demand already "
+                   "exceeds spec-ready supply. What's missing is a forward signal so buyers can "
+                   "commit before the material physically exists. The layer shares that advance "
+                   "information so independent operators can coordinate, without running a marketplace.")
     with j2:
         st.markdown("**Machine vision for yield prediction**")
         cap("A permit gives an address and a date. Machine vision turns building imagery and "
                    "the archetype schema into predicted species, dimensions, condition and board "
                    "footage, closing the inference gap at scale. A Phase 2 to 3 capability.")
 
-    st.info("What makes it durable: the moat is the canonical dataset and the network of "
+    st.info("What makes it durable: the lasting asset is the canonical dataset and the network of "
             "corrections that accumulates as municipalities, contractors and buyers use it. The "
-            "same method extends from lumber to other reclaimed materials, with the data and "
-            "network compounding underneath.")
+            "same method extends from lumber to other reclaimed materials, and the data and "
+            "network grow more valuable as they accumulate.")
 
 
 # --------------------------------------------------------------------------- #
@@ -1141,8 +1141,8 @@ if page == "Matchmaking":
     st.subheader("Matchmaking (prototype)")
     cap("Phase-2 demonstrator. It shows how a specific demolition routes to nearby recovery "
                "and reuse firms, a working proof of the mechanic on the real ECCC directory, not a "
-               "live commercial exchange. CCC's role is to feed this signal to operators and partner "
-               "marketplaces, not to hold liquidity.")
+               "live commercial exchange. CCC's role is to send this signal to operators and partner "
+               "marketplaces, rather than to run a marketplace.")
 
     stored = projects.projects_dataframe()
     opts = ["Quick entry"] + (["From the project store"] if not stored.empty else [])

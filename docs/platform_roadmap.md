@@ -17,7 +17,7 @@ A live platform adds what the static layer can't deliver on its own:
 3. **Dynamic recovery forecasting.** Recompute the forecast as new permits,
    projects, and ecosystem actors enter the system.
 
-### Demand priming and the two-sided ecosystem
+### Demand and the two-sided ecosystem
 
 The supply estimate is only half the picture; the platform has to model the demand
 side and the full two-sided ecosystem. That is built into the app: a real
@@ -25,12 +25,12 @@ reclaimed-wood company directory, the national SME census, the circular value
 chain, demand segments, the economics, and a ranked diagnosis of why recoverable
 wood still isn't reclaimed.
 
-The strategic read that follows from it: this isn't a marketplace and it isn't a
+The strategic read that follows from it: this is a coordination gap rather than a
 supply problem. Latent demand already exceeds current spec-ready supply. What's
 missing is a forward supply signal, so buyers can commit to material before it
-physically exists. The closest analogy is air traffic control rather than a
-listings site: shared advance intelligence that lets independent operators
-coordinate. Predictable supply primes demand that unpredictable supply cannot.
+physically exists. Shared advance information lets independent operators coordinate,
+without running a marketplace. A predictable supply signal is what makes those
+commitments possible.
 
 The deconstructor is the real customer, because the recover-versus-downcycle
 decision is theirs, and demand assurance is what tips it toward recovery.
@@ -90,7 +90,7 @@ differs for each.
 
 The guiding rule is simple. CCC builds the data asset and the analysis it depends
 on, and it partners for commodity infrastructure and for marketplaces that already
-hold liquidity.
+have buyers.
 
 ### Integration pathway
 
@@ -106,12 +106,12 @@ directions:
 
 ### What makes this durable
 
-The competitive moat isn't the app itself. It's the canonical dataset and the
-network of corrections that builds up as municipalities, contractors, and reuse
-buyers use it. The layer grows harder to replicate as more connectors, registered
-projects, and expert corrections accumulate inside it. That's the foundry model:
-the same methodology extends from lumber to other reclaimed materials, with the
-data and network asset compounding underneath.
+The lasting advantage comes from the canonical dataset and the network of
+corrections that builds up as municipalities, contractors, and reuse buyers use it.
+The layer grows harder to replicate as more connectors, registered projects, and
+expert corrections accumulate inside it. The same methodology then extends from
+lumber to other reclaimed materials, and the data and network asset grow more
+valuable as they accumulate.
 
 ### Limitations
 
