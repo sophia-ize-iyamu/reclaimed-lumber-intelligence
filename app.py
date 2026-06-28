@@ -146,6 +146,17 @@ div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-var
   font-size: 0.72rem; letter-spacing: 0.09em; font-weight: 700; text-transform: uppercase;
   color: var(--muted); margin: 14px 0 2px; padding-left: 12px;
 }
+/* Section "tabs": color the expander headers even when collapsed */
+[data-testid="stSidebar"] details { border: none !important; background: transparent !important; }
+[data-testid="stSidebar"] details summary {
+  background: rgba(77,183,121,0.12); border-left: 3px solid var(--gold);
+  border-radius: 8px; padding: 8px 12px; margin: 3px 0; list-style: none;
+}
+[data-testid="stSidebar"] details summary:hover { background: rgba(77,183,121,0.22); }
+[data-testid="stSidebar"] details[open] summary { background: rgba(77,183,121,0.22); }
+[data-testid="stSidebar"] details summary p,
+[data-testid="stSidebar"] details summary span,
+[data-testid="stSidebar"] details summary div { color: var(--gold-text); font-weight: 700; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -220,7 +231,7 @@ st.sidebar.caption("Circular Construction Canada")
 NAV = [
     ("", ["Overview"]),
     ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty"]),
-    ("Demand", ["Demand segments", "Economics"]),
+    ("Demand", ["Demand segments", "Demand gaps", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps"]),
     ("Platform", ["Platform roadmap", "Projects"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
@@ -309,6 +320,11 @@ if page == "Overview":
                f"{fmt_bf(nat['spec_ready']['p50'])}  ->  "
                f"{fmt_bf(nat['spec_ready']['p90'])} per base year. "
                "The range propagates coefficient and data-coverage uncertainty.")
+    _ta = demand.tier_a_total(); _spec = summary["spec_ready_bf"].sum()
+    st.caption(f"Demand side: buyers legal today want about {fmt_bf(_ta)}, roughly "
+               f"{_ta / _spec:.0f}x current spec-ready supply, so across markets the binding "
+               "constraint is supply, not appetite. See Demand for the buyer breakdown and "
+               "Demand gaps for the per-market balance.")
 
     st.markdown("#### National view: spec-ready reusable lumber by CMA (base year)")
     map_df = summary.merge(
@@ -637,9 +653,13 @@ if page == "Demand segments":
     spec_ready = data["summary"]["spec_ready_bf"].sum()
     ta, tb = demand.tier_a_total(), demand.tier_b_total()
     d1, d2, d3 = st.columns(3)
+    ta_lo, ta_hi = demand.tier_a_range()
+    tb_lo, tb_hi = demand.tier_b_range()
     d1.metric("Spec-ready supply (model, base yr)", fmt_bf(spec_ready))
-    d2.metric("Demand legal today (Tier A)", fmt_bf(ta))
-    d3.metric("Demand if code allows reuse (Tier B)", fmt_bf(tb))
+    d2.metric("Demand legal today (Tier A)", fmt_bf(ta),
+              f"{fmt_bf(ta_lo)}-{fmt_bf(ta_hi)} band", delta_color="off")
+    d3.metric("Demand if code allows reuse (Tier B)", fmt_bf(tb),
+              f"{fmt_bf(tb_lo)}-{fmt_bf(tb_hi)} band", delta_color="off")
     st.info("Latent demand dwarfs current spec-ready supply, so the binding constraint is supply "
             "and coordination, not appetite. Visible demand stays small because buyers cannot "
             "commit to material they cannot see coming. That is the gap this layer targets.")
@@ -688,6 +708,57 @@ if page == "Economics":
     st.caption("Ranked by severity. The largest demand tier (structural reuse) is capped by code "
                "before economics even apply, and the next constraint is the missing forward supply "
                "signal, which is exactly what a predictive layer supplies.")
+
+
+# --------------------------------------------------------------------------- #
+# Demand gaps (mirror of Supply gaps)
+# --------------------------------------------------------------------------- #
+if page == "Demand gaps":
+    st.subheader("Where demand outruns local supply")
+    st.markdown("The mirror of supply gaps. National legal-today demand (Tier A) is allocated "
+                "across the 25 CMAs by population share, then set against each market's spec-ready "
+                "supply. It shows where buyers want more reclaimed wood than the local market can "
+                "currently deliver.")
+
+    pop = {r["cma"]: r["population"] for r in cma_cfg.list_cmas()}
+    total_pop = sum(pop.values()) or 1
+    tier_a = demand.tier_a_total()
+    dg = data["summary"][["cma", "spec_ready_bf"]].copy()
+    dg["spec_ready_bf"] = pd.to_numeric(dg["spec_ready_bf"], errors="coerce").fillna(0.0)
+    dg["population"] = dg["cma"].map(pop).fillna(0)
+    dg["demand_bf"] = tier_a * (dg["population"] / total_pop)
+    dg["gap_bf"] = dg["demand_bf"] - dg["spec_ready_bf"]
+    dg["coverage"] = (dg["spec_ready_bf"] / dg["demand_bf"].where(dg["demand_bf"] > 0)).fillna(0.0)
+    dg = dg.sort_values("gap_bf", ascending=False).reset_index(drop=True)
+
+    unmet = int((dg["coverage"] < 1).sum())
+    dm1, dm2, dm3 = st.columns(3)
+    dm1.metric("Demand legal today (Tier A)", fmt_bf(tier_a))
+    dm2.metric("Spec-ready supply (base yr)", fmt_bf(dg["spec_ready_bf"].sum()))
+    dm3.metric("Markets with unmet demand", f"{unmet} of {len(dg)}")
+
+    top = dg.head(12).melt(id_vars="cma", value_vars=["demand_bf", "spec_ready_bf"],
+                           var_name="series", value_name="bf")
+    top["series"] = top["series"].map({"demand_bf": "allocated demand",
+                                       "spec_ready_bf": "spec-ready supply"})
+    fig = px.bar(top, x="bf", y="cma", color="series", orientation="h", barmode="group",
+                 color_discrete_map={"allocated demand": "#9A9A92", "spec-ready supply": ACCENT},
+                 labels={"bf": "board feet per year", "cma": "", "series": ""})
+    fig.update_layout(yaxis=dict(autorange="reversed"), legend=dict(orientation="h", y=1.06))
+    style_chart(fig, 460)
+    st.plotly_chart(fig, width="stretch")
+
+    show = dg.copy()
+    show["allocated demand"] = show["demand_bf"].map(fmt_bf)
+    show["spec-ready supply"] = show["spec_ready_bf"].map(fmt_bf)
+    show["demand gap"] = show["gap_bf"].map(fmt_bf)
+    show["coverage"] = (show["coverage"] * 100).round(0).astype(int).astype(str) + "%"
+    st.dataframe(show[["cma", "allocated demand", "spec-ready supply", "demand gap", "coverage"]],
+                 width="stretch", hide_index=True)
+    st.caption("Allocation assumption: national Tier A demand split by each CMA's share of "
+               "population (StatCan 2021 Census, Table 98-10-0014). Coverage is local spec-ready "
+               "supply divided by allocated local demand. Demand exceeds supply in nearly every "
+               "market, which is the core finding: the binding constraint is supply, not appetite.")
 
 
 # --------------------------------------------------------------------------- #

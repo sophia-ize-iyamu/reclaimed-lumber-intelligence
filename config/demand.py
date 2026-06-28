@@ -97,3 +97,15 @@ def tier_a_total():
 def tier_b_total():
     """Point-estimate demand that needs a code change (board feet/yr)."""
     return sum(s["point_bf"] for s in demand_table() if s["tier"] == "B")
+
+
+def tier_a_range():
+    """Low-high band for legal-today demand (sum of segment lows and highs)."""
+    rows = [s for s in demand_table() if s["tier"] == "A"]
+    return sum(s["low_bf"] for s in rows), sum(s["high_bf"] for s in rows)
+
+
+def tier_b_range():
+    """Low-high band for code-change demand (sum of segment lows and highs)."""
+    rows = [s for s in demand_table() if s["tier"] == "B"]
+    return sum(s["low_bf"] for s in rows), sum(s["high_bf"] for s in rows)
