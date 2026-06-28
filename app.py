@@ -118,8 +118,11 @@ div[data-testid="stMetricValue"] {
 button[data-baseweb="tab"] { font-size: 0.95rem; padding-top: 6px; padding-bottom: 6px; }
 /* Tables */
 div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-variant-numeric: tabular-nums; }
-/* Captions: use the muted token (darker than Streamlit's faded default) for contrast */
-[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p { color: var(--muted) !important; }
+/* Captions: force the muted token (high specificity beats Streamlit's faded default) */
+.stApp [data-testid="stCaptionContainer"],
+.stApp [data-testid="stCaptionContainer"] p,
+.stApp [data-testid="stCaptionContainer"] span,
+.stApp small, .stApp [data-testid="stCaptionContainer"] div { color: var(--muted) !important; }
 
 /* Hero header */
 .hero { margin: 2px 0 4px; }
@@ -221,6 +224,14 @@ def fmt_cad(x):
 
 def fmt_m3(x, reg):
     return f"{x/reg['bf_per_m3']:,.0f} m3"
+
+
+def cap(text):
+    """A caption with explicit, readable contrast (does not rely on Streamlit's
+    faded caption colour, which is too light on the cream background)."""
+    st.markdown(
+        f"<p style='color:var(--muted);font-size:0.84rem;line-height:1.45;"
+        f"margin:0.1rem 0 0.5rem'>{text}</p>", unsafe_allow_html=True)
 
 
 TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
@@ -361,18 +372,18 @@ if page == "Overview":
     c3.metric("Spec-ready reusable", fmt_bf(summary["spec_ready_bf"].sum()))
     c4.metric("Reclaimed value (CAD/yr)", fmt_cad(summary["value_cad"].sum()))
 
-    st.caption(f"National spec-ready, Monte Carlo P10-P50-P90: "
+    cap(f"National spec-ready, Monte Carlo P10-P50-P90: "
                f"{fmt_bf(nat['spec_ready']['p10'])}  ->  "
                f"{fmt_bf(nat['spec_ready']['p50'])}  ->  "
                f"{fmt_bf(nat['spec_ready']['p90'])} per base year. "
                "The range propagates coefficient and data-coverage uncertainty.")
     _ta = demand.tier_a_total(); _spec = summary["spec_ready_bf"].sum()
-    st.caption(f"Demand side: buyers legal today want about {fmt_bf(_ta)}, roughly "
+    cap(f"Demand side: buyers legal today want about {fmt_bf(_ta)}, roughly "
                f"{_ta / _spec:.0f}x current spec-ready supply, so across markets the binding "
                "constraint is supply, not appetite. See Demand for the buyer breakdown and "
                "Demand gaps for the per-market balance.")
     _av = carbon.avoided_production_t(_spec); _bio = carbon.biogenic_stored_t(_spec)
-    st.caption(f"Embodied carbon: reusing the spec-ready supply avoids about {_av:,.0f} t CO2e "
+    cap(f"Embodied carbon: reusing the spec-ready supply avoids about {_av:,.0f} t CO2e "
                f"of new-lumber manufacturing a year and keeps about {_bio:,.0f} t CO2e of "
                "biogenic carbon in use. Reused components count as zero upfront carbon under "
                "Toronto Green Standard v4. See Policy & carbon.")
@@ -405,7 +416,7 @@ if page == "Overview":
                      labels={"value_cad": "CAD / yr", "cma": ""})
         style_chart(fig, 320, yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, width="stretch")
-    st.caption("Marker size = spec-ready lumber. Colour = data coverage (green high, "
+    cap("Marker size = spec-ready lumber. Colour = data coverage (green high, "
                "amber medium, red low). Only Toronto uses a live permit feed.")
 
 
@@ -427,7 +438,7 @@ if page == "Municipal baseline":
     m2.metric("Annual demolition permits", f"{sub['permits'].sum():,.0f}")
     m3.metric("Spec-ready", fmt_bf(sub["spec_ready_bf"].sum()))
     m4.metric("Reclaimed value/yr", fmt_cad(sub["value_cad"].sum()))
-    st.caption(("Housing-stock age: real StatCan distribution." if rec["vintage_is_real"]
+    cap(("Housing-stock age: real StatCan distribution." if rec["vintage_is_real"]
                 else "Housing-stock age: calibrated profile (no CMA-specific StatCan row).")
                + f" Demolition source: {sub['source'].iloc[0]}.")
 
@@ -492,7 +503,7 @@ if page == "Hotspots & archetypes":
         st.markdown("**Toronto demolition hotspots**")
         st.dataframe(hotspots[["neighbourhood", "annual_permits", "archetype_label"]],
                      width="stretch", hide_index=True)
-        st.caption("Neighbourhood splits are illustrative of the method; the city total "
+        cap("Neighbourhood splits are illustrative of the method; the city total "
                    "and archetype mix are anchored to real Toronto Open Data.")
     st.info("Post-war stick-frame homes dominate the demolition stream and carry the most "
             "reusable dimensional lumber; pre-war homes are fewer but carry higher-value "
@@ -539,7 +550,7 @@ if page == "Forecast & uncertainty":
     u1.metric("Spec-ready P10 (conservative)", fmt_bf(nat["spec_ready"]["p10"]))
     u2.metric("Spec-ready P50 (central)", fmt_bf(nat["spec_ready"]["p50"]))
     u3.metric("Spec-ready P90 (optimistic)", fmt_bf(nat["spec_ready"]["p90"]))
-    st.caption("4,000 draws. Recovery coefficients are sampled jointly across all CMAs "
+    cap("4,000 draws. Recovery coefficients are sampled jointly across all CMAs "
                "(correlated national error that doesn't diversify away), and the demolition "
                "count is sampled per CMA by coverage tier.")
 
@@ -569,7 +580,7 @@ if page == "Forecast & uncertainty":
     style_chart(fig, 340, xaxis_title="national spec-ready bf if parameter swings low to high")
     fig.update_layout(margin=dict(l=0, r=0, t=28, b=0))
     st.plotly_chart(fig, width="stretch")
-    st.caption("Recovery method factor (deconstruction vs demolition) dominates. That's "
+    cap("Recovery method factor (deconstruction vs demolition) dominates. That's "
                "the single highest-leverage place for CCC to act and to cut uncertainty. "
                "Policy that shifts demolition toward deconstruction moves the national "
                "number more than any other lever.")
@@ -600,7 +611,7 @@ if page == "Ecosystem":
     e2.metric("National SMEs (census)", f"{companies.NATIONAL_SME_TOTAL}")
     e3.metric("Habitat ReStores", f"{restore_count}")
     e4.metric("Provinces covered", f"{comp['province'].nunique()}")
-    st.caption(f"ReStore count source: {restore_src}. Turn on the sidebar feed toggle to refresh "
+    cap(f"ReStore count source: {restore_src}. Turn on the sidebar feed toggle to refresh "
                "it live; the named directory falls back to the dated ECCC snapshot either way.")
 
     st.markdown("#### The circular value chain")
@@ -632,7 +643,7 @@ if page == "Ecosystem":
     st.markdown(f'<div style="max-width:760px;margin:2px auto 6px">'
                 f'<img alt="circular value chain" style="width:100%" '
                 f'src="data:image/svg+xml;base64,{_b}"/></div>', unsafe_allow_html=True)
-    st.caption("Firm counts are the national SME census by value-chain step (Light House, March "
+    cap("Firm counts are the national SME census by value-chain step (Light House, March "
                "2026). Retail dominates because it includes 102 Habitat for Humanity ReStores.")
 
     st.markdown("#### Company directory")
@@ -683,7 +694,7 @@ if page == "Ecosystem":
     st.markdown("#### Sector capacity context")
     st.dataframe(pd.DataFrame(companies.SECTOR_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
-    st.caption("Confidence and limits: the firm directory and the national SME census are real and "
+    cap("Confidence and limits: the firm directory and the national SME census are real and "
                "dated, so the ecosystem map is solid. Per-market capacity in the gap analyses is the "
                "census allocated to provinces, so it is directional, not a verified per-site audit.")
 
@@ -708,10 +719,10 @@ if page == "Supply gaps":
     gshow["bf per SME"] = gshow["bf_per_sme"].map(lambda x: fmt_bf(x) if x != float("inf") else "n/a")
     st.dataframe(gshow[["cma", "province", "spec_ready", "province_smes", "bf per SME", "gap_flag"]],
                  width="stretch", hide_index=True)
-    st.caption("Province SME counts come from the national census of 252 scaled by the Light House "
+    cap("Province SME counts come from the national census of 252 scaled by the Light House "
                "provincial distribution. A market is flagged where supply is high relative to the "
                "recovery and processing firms operating in its province.")
-    st.caption("Confidence and limits: capacity is the national census allocated to provinces, so "
+    cap("Confidence and limits: capacity is the national census allocated to provinces, so "
                "this flags directional pressure, not audited per-firm capacity.")
 
 
@@ -759,7 +770,7 @@ if page == "Demand segments":
     st.markdown("#### Market context")
     st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
-    st.caption("Confidence and limits: segment volumes are bottom-up board-foot estimates shown as "
+    cap("Confidence and limits: segment volumes are bottom-up board-foot estimates shown as "
                "ranges, calibrated to the market structure above, not a transaction dataset. They "
                "are less precise than the supply model, which carries Monte Carlo bands. The "
                "economics figures (premiums, salvage value) are directly sourced.")
@@ -780,7 +791,7 @@ if page == "Economics":
     m1.metric("Reclaimed price premium", f"{int(rp[0]*100)}-{int(rp[2]*100)}%", "over virgin", delta_color="off")
     m2.metric("Deconstruction cost premium", f"{int(dp[0]*100)}-{int(dp[2]*100)}%", "over demolition", delta_color="off")
     m3.metric("Salvage value, Metro Vancouver", "$342M/yr", "2020", delta_color="off")
-    st.caption("Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. "
+    cap("Reclaimed lumber sells at a premium, yet recovery costs more and takes longer. "
                "Sources: Light House SME report (March 2026); Vancouver Economic Commission, "
                "Unbuilders & BCIT, Business Case for Deconstruction (July 2020).")
 
@@ -789,7 +800,7 @@ if page == "Economics":
     bt = bt.rename(columns={"rank": "#", "name": "bottleneck", "side": "binds on", "note": "explanation"})
     st.dataframe(bt[["#", "bottleneck", "binds on", "explanation"]],
                  width="stretch", hide_index=True)
-    st.caption("Ranked by severity. The largest demand tier (structural reuse) is capped by code "
+    cap("Ranked by severity. The largest demand tier (structural reuse) is capped by code "
                "before economics even apply, and the next constraint is the missing forward supply "
                "signal, which is exactly what a predictive layer supplies.")
 
@@ -841,11 +852,11 @@ if page == "Demand gaps":
     show["coverage"] = (show["coverage"] * 100).round(0).astype(int).astype(str) + "%"
     st.dataframe(show[["cma", "allocated demand", "spec-ready supply", "demand gap", "coverage"]],
                  width="stretch", hide_index=True)
-    st.caption("Allocation assumption: national Tier A demand split by each CMA's share of "
+    cap("Allocation assumption: national Tier A demand split by each CMA's share of "
                "population (StatCan 2021 Census, Table 98-10-0014). Coverage is local spec-ready "
                "supply divided by allocated local demand. Demand exceeds supply in nearly every "
                "market, which is the core finding: the binding constraint is supply, not appetite.")
-    st.caption("Confidence and limits: demand is allocated to metros by population share and supply "
+    cap("Confidence and limits: demand is allocated to metros by population share and supply "
                "is the model estimate, so this is a directional balance, not measured local demand.")
 
 
@@ -915,7 +926,7 @@ if page == "Policy & capacity":
     lead = pol[pol["score"] >= 2].sort_values("score", ascending=False)
     st.dataframe(lead[["cma", "policy", "initiative", "source"]].drop_duplicates("cma"),
                  width="stretch", hide_index=True)
-    st.caption("Most metros sit in 'policy opportunity': real recoverable supply with little "
+    cap("Most metros sit in 'policy opportunity': real recoverable supply with little "
                "construction-specific circular policy. The leaders (Vancouver, Toronto) pair policy "
                "with capacity. Scores come from documented programs; where no local by-law is "
                "documented a metro defaults to its provincial signal. Federal backdrop: Canada "
@@ -964,7 +975,7 @@ if page == "Embodied carbon":
     show["biogenic kept (t CO2e/yr)"] = show["stored_t"].map(lambda x: f"{x:,.0f}")
     st.dataframe(show[["cma", "spec-ready", "avoided (t CO2e/yr)", "biogenic kept (t CO2e/yr)"]],
                  width="stretch", hide_index=True)
-    st.caption("Coefficients: avoided manufacturing 62 kg CO2e/m3 and biogenic carbon 785 kg "
+    cap("Coefficients: avoided manufacturing 62 kg CO2e/m3 and biogenic carbon 785 kg "
                "CO2e/m3 of softwood lumber (Athena Institute CtoG LCA, 2018; Review of Canadian "
                "harvested-wood-product emission factors, 2024), at 0.00236 m3 per board foot. "
                "Displacement check: about 280 kg CO2e/tonne avoided by reuse (UK Forest Research, "
@@ -1026,7 +1037,7 @@ if page == "Platform roadmap":
         with col:
             st.markdown(f"**{ph}**  \n*{when}*")
             st.markdown(f"**{title}**")
-            st.caption(desc)
+            cap(desc)
 
     st.markdown("#### Build versus partner")
     st.dataframe(pd.DataFrame([
@@ -1046,28 +1057,28 @@ if page == "Platform roadmap":
     i1, i2, i3 = st.columns(3)
     with i1:
         st.markdown("**Inbound**")
-        st.caption("Municipal open-data portals and provincial assessment data feed the canonical "
+        cap("Municipal open-data portals and provincial assessment data feed the canonical "
                    "demolition and housing tables.")
     with i2:
         st.markdown("**Internal**")
-        st.caption("The assumptions registry and project store let CCC and partners correct and "
+        cap("The assumptions registry and project store let CCC and partners correct and "
                    "extend the model without touching code.")
     with i3:
         st.markdown("**Outbound**")
-        st.caption("A read API over the forecast and gap tables lets municipalities, funders and "
+        cap("A read API over the forecast and gap tables lets municipalities, funders and "
                    "marketplaces consume the intelligence in their own tools.")
 
     st.markdown("#### Two capabilities worth calling out")
     j1, j2 = st.columns(2)
     with j1:
         st.markdown("**Predictable supply primes demand**")
-        st.caption("This is not a marketplace and not a supply shortage. Latent demand already "
+        cap("This is not a marketplace and not a supply shortage. Latent demand already "
                    "exceeds spec-ready supply. What is missing is a forward signal so buyers can "
                    "commit before material physically exists. The analogy is air traffic control, "
                    "not a listings site.")
     with j2:
         st.markdown("**Machine vision for yield prediction**")
-        st.caption("A permit gives an address and a date. Machine vision turns building imagery and "
+        cap("A permit gives an address and a date. Machine vision turns building imagery and "
                    "the archetype schema into predicted species, dimensions, condition and board "
                    "footage, closing the inference gap at scale. A Phase 2 to 3 capability.")
 
@@ -1124,7 +1135,7 @@ if page == "Projects":
 # --------------------------------------------------------------------------- #
 if page == "Matchmaking":
     st.subheader("Matchmaking (prototype)")
-    st.caption("Phase-2 demonstrator. It shows how a specific demolition routes to nearby recovery "
+    cap("Phase-2 demonstrator. It shows how a specific demolition routes to nearby recovery "
                "and reuse firms, a working proof of the mechanic on the real ECCC directory, not a "
                "live commercial exchange. CCC's role is to feed this signal to operators and partner "
                "marketplaces, not to hold liquidity.")
@@ -1171,7 +1182,7 @@ if page == "Matchmaking":
         matches = matches.sort_values("fit")
         st.dataframe(matches[["name", "role", "activities", "website"]].head(12),
                      width="stretch", hide_index=True)
-        st.caption("Ranked by value-chain fit: recovery and processing first, since they can take "
+        cap("Ranked by value-chain fit: recovery and processing first, since they can take "
                    "the material, then remanufacture and resale. Province match from the ECCC "
                    "directory (September 2024).")
 
@@ -1207,7 +1218,7 @@ if page == "Assumptions":
                 newv = st.slider(f"{group}.{key}", 1, 15, int(cur), 1, help=meta["basis"])
             else:
                 newv = st.number_input(f"{group}.{key}", value=float(cur), help=meta["basis"])
-            st.caption(f"range {meta['low']}-{meta['high']} | {meta['source']}")
+            cap(f"range {meta['low']}-{meta['high']} | {meta['source']}")
             if newv != meta["value"]:
                 st.session_state["assumption_overrides"][(group, key)] = newv
             elif (group, key) in st.session_state["assumption_overrides"]:
@@ -1227,7 +1238,7 @@ if page == "Assumptions":
             "wood_frame_likelihood": val(v["wood_frame_likelihood"]),
             "value_tier": v["value_tier"]})
     st.dataframe(pd.DataFrame(arch_rows), width="stretch", hide_index=True)
-    st.caption("Editing a slider clears the pipeline cache on next run. Full provenance "
+    cap("Editing a slider clears the pipeline cache on next run. Full provenance "
                "and caveats are in docs/SOURCES.md.")
 
 
@@ -1295,7 +1306,7 @@ if page == "How it works":
             st.markdown("\n".join(f"- {it}" for it in items))
 
     st.markdown("#### Inside the recovery cascade")
-    st.caption("One typical post-war single-detached home: 120 m2 floor area, built around "
+    cap("One typical post-war single-detached home: 120 m2 floor area, built around "
                "1965, mixed demolition practice. Each step multiplies by a sourced coefficient.")
     casc = [("Floor area", "120 m2"), ("Framing lumber", "9,290 bf"), ("Recoverable", "2,029 bf"),
             ("Salvageable", "1,420 bf"), ("Spec-ready", "781 bf"), ("Reclaimed value", "$3,750")]
@@ -1303,20 +1314,20 @@ if page == "How it works":
         c.metric(lab, v)
     for c, (lab, v) in zip(st.columns(3), casc[3:]):
         c.metric(lab, v)
-    st.caption("Coefficients applied in order: framing 79 bf/m2; structural recovery x0.30 and "
+    cap("Coefficients applied in order: framing 79 bf/m2; structural recovery x0.30 and "
                "age-adjusted condition x0.73; denailing and sort x0.70; grading x0.55; "
                "value $4.80/bf. Sources: McKeever & Phelps FPL 1994; Oregon DEQ 2019; "
                "Falk FPL-RP-650. Gross wood content including panels and finish is 11,911 bf.")
 
     st.markdown("#### The two-sided picture: supply meets demand")
-    st.caption("The supply model is half the story. The Ecosystem and Demand pages add the firms "
+    cap("The supply model is half the story. The Ecosystem and Demand pages add the firms "
                "that recover and remake wood, and the markets that buy it.")
     w1, w2, w3, w4 = st.columns(4)
     w1.metric("Named companies", f"{len(companies.list_companies())}")
     w2.metric("National SMEs", f"{companies.NATIONAL_SME_TOTAL}")
     w3.metric("Demand legal today", fmt_bf(demand.tier_a_total()))
     w4.metric("Demand if reuse is allowed", fmt_bf(demand.tier_b_total()))
-    st.caption("Latent demand runs well above current spec-ready supply, so the binding constraint "
+    cap("Latent demand runs well above current spec-ready supply, so the binding constraint "
                "is supply and coordination. The top blocker is the structural-reuse code wall, and "
                "the next is the missing forward supply signal that this layer provides.")
     svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 690" font-family="Inter, Segoe UI, Arial, sans-serif">
