@@ -411,7 +411,7 @@ if page == "Overview":
 # 1. Municipal baseline
 # --------------------------------------------------------------------------- #
 if page == "Municipal baseline":
-    st.subheader("Deliverable 1: Municipal demolition & housing-stock baseline")
+    st.subheader("Municipal demolition & housing-stock baseline")
     st.markdown("First-order, city-wide estimate of salvageable wood per market, "
                 "built from demolition activity, real StatCan housing-stock age, and "
                 "building archetype.")
@@ -459,7 +459,7 @@ if page == "Municipal baseline":
 # 2. Hotspots & archetypes
 # --------------------------------------------------------------------------- #
 if page == "Hotspots & archetypes":
-    st.subheader("Deliverable 2: Neighbourhood hotspots & archetype refinement")
+    st.subheader("Neighbourhood hotspots & archetype refinement")
     st.markdown("Demolition clusters in specific neighbourhoods and repeatable building "
                 "types. Toronto is the worked example. Its real permit data shows "
                 "single-family detached is about 77% of demolitions, confirming the brief.")
@@ -499,7 +499,7 @@ if page == "Hotspots & archetypes":
 # 3. Forecast + uncertainty
 # --------------------------------------------------------------------------- #
 if page == "Forecast & uncertainty":
-    st.subheader("Deliverable 3: Material flow forecast with propagated uncertainty")
+    st.subheader("Material flow forecast with propagated uncertainty")
     fcast = data["forecast"]
     metric = st.selectbox(
         "Metric", ["spec_ready_bf", "salvageable_bf", "recoverable_bf", "gross_bf", "value_cad"],
@@ -582,7 +582,7 @@ if page == "Forecast & uncertainty":
 # 4. Ecosystem & gaps
 # --------------------------------------------------------------------------- #
 if page == "Ecosystem":
-    st.subheader("Deliverable 4: The reclaimed-wood ecosystem")
+    st.subheader("The reclaimed-wood ecosystem")
     st.markdown("Circularity is two-sided: the buildings that generate waste wood, and the firms "
                 "that recover, process, remake, retail, recycle, downcycle and upcycle it. This maps "
                 "the real ecosystem from the ECCC company directory (September 2024) and the national "
@@ -970,8 +970,8 @@ if page == "Embodied carbon":
 # 5. Platform roadmap
 # --------------------------------------------------------------------------- #
 if page == "Platform roadmap":
-    st.subheader("Deliverable 5: From intelligence layer to coordination platform")
-    st.markdown("This app is the defensible intelligence layer. Deliverable 5 is how Circular "
+    st.subheader("From intelligence layer to coordination platform")
+    st.markdown("This app is the defensible intelligence layer. This section is how Circular "
                 "Construction Canada turns it into a live coordination platform: a phased build, a "
                 "build-versus-partner split, and a clean integration contract.")
 
