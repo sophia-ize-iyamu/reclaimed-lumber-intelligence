@@ -637,6 +637,13 @@ if page == "Ecosystem":
                 "reclaimed-lumber warehousing is sparse, which is why storage and standards rank "
                 "among the bottlenecks. A verified warehouse and capacity registry is a Phase-2 build.")
 
+    st.markdown("#### Sector capacity context")
+    st.dataframe(pd.DataFrame(companies.SECTOR_CONTEXT, columns=["Indicator", "Value", "Source"]),
+                 width="stretch", hide_index=True)
+    st.caption("Confidence and limits: the firm directory and the national SME census are real and "
+               "dated, so the ecosystem map is solid. Per-market capacity in the gap analyses is the "
+               "census allocated to provinces, so it is directional, not a verified per-site audit.")
+
 
 
 # --------------------------------------------------------------------------- #
@@ -661,6 +668,8 @@ if page == "Supply gaps":
     st.caption("Province SME counts come from the national census of 252 scaled by the Light House "
                "provincial distribution. A market is flagged where supply is high relative to the "
                "recovery and processing firms operating in its province.")
+    st.caption("Confidence and limits: capacity is the national census allocated to provinces, so "
+               "this flags directional pressure, not audited per-firm capacity.")
 
 
 # --------------------------------------------------------------------------- #
@@ -703,6 +712,14 @@ if page == "Demand segments":
     seg_tbl["tier"] = seg_tbl["tier"].map({"A": "legal today", "B": "needs code change"})
     st.dataframe(seg_tbl[["segment", "tier", "absorption", "note"]],
                  width="stretch", hide_index=True)
+
+    st.markdown("#### Market context")
+    st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
+                 width="stretch", hide_index=True)
+    st.caption("Confidence and limits: segment volumes are bottom-up board-foot estimates shown as "
+               "ranges, calibrated to the market structure above, not a transaction dataset. They "
+               "are less precise than the supply model, which carries Monte Carlo bands. The "
+               "economics figures (premiums, salvage value) are directly sourced.")
 
 
 
@@ -785,6 +802,8 @@ if page == "Demand gaps":
                "population (StatCan 2021 Census, Table 98-10-0014). Coverage is local spec-ready "
                "supply divided by allocated local demand. Demand exceeds supply in nearly every "
                "market, which is the core finding: the binding constraint is supply, not appetite.")
+    st.caption("Confidence and limits: demand is allocated to metros by population share and supply "
+               "is the model estimate, so this is a directional balance, not measured local demand.")
 
 
 # --------------------------------------------------------------------------- #

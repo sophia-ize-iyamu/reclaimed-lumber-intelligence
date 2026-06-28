@@ -7,15 +7,36 @@ recoverable wood exists, why isn't it reclaimed, and is the binding constraint
 demand or supply?
 
 This module holds the demand segments, the economics, and the ranked bottleneck
-diagnosis. Figures are order-of-magnitude planning estimates drawn from the
-June 2026 research set (Light House SME report March 2026; the project's own
-bottom-up demand build; ECCC and municipal material-flow analyses). They are
-ranges on purpose. See docs/SOURCES.md for provenance and dates.
+diagnosis. Board-foot demand by segment is a bottom-up estimate given as ranges
+on purpose, calibrated to the real market's structure: flooring and furniture
+are the largest reclaimed-wood applications, and the North American reclaimed-
+lumber market was about US$12.4 billion in 2024 (market research, 2024-2025),
+inside a roughly C$56 billion Canadian value-retention economy (2019). Segment
+categories follow the ECCC construction/renovation/demolition wood demand
+taxonomy. The economics figures are separately and directly sourced (Light House;
+Vancouver Economic Commission). See MARKET_CONTEXT and docs/SOURCES.md.
 
 All volumes are board feet per year.
 """
 
 M = 1_000_000
+
+# Real market anchors that calibrate the bottom-up board-foot estimates. Dollar
+# market size and board-foot demand are different units, so these are context and
+# a sanity check on segment structure, not a direct conversion.
+# (label, value, source with date)
+MARKET_CONTEXT = [
+    ("North American reclaimed-lumber market", "about US$12.4 billion (2024)",
+     "Reclaimed lumber market research (Global Growth Insights; market.us, 2024-2025)"),
+    ("Market growth", "about 4 to 5% per year",
+     "Reclaimed lumber market reports (Precedence; market.us, 2024-2025)"),
+    ("Largest applications", "flooring and furniture lead demand",
+     "Precedence Research; market.us (2024-2025)"),
+    ("Canadian value-retention economy (reuse, repair, refurbishment)", "about C$56 billion (2019)",
+     "Constructive Voices; TheFutureEconomy.ca (2023)"),
+    ("Structural reuse (Tier B)", "blocked by code, not by demand",
+     "No Canadian code path for structural reuse; liability sits with the engineer of record"),
+]
 
 # Demand segments. tier "A" is legal today (non-structural / aesthetic); tier "B"
 # needs a building-code change to allow structural reuse. code_gated flags B.

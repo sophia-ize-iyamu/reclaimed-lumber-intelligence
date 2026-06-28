@@ -44,6 +44,8 @@ Corrections from the June 2026 source review are listed at the end.
 | Guelph-Wellington CRD material flow | wood inflow ~19.6 kt vs outflow ~2.75 kt (2021) | Dillon Consulting + Metabolic + Summit72 (Our Food Future) | 2021 data | https://www.dillon.ca/projects/material-flow-analysis-guelph-on/ | No public full-report PDF; bundled: docs/sources/Guelph-Wellington_MaterialFlowAnalysis_Report_FINAL.pdf |
 | Residential construction waste rates | wood 21.8% by wt, 31.7% by vol | BC Housing / Light House, "Residential Construction Waste Analysis" | Apr 2021 (PDF May 27, 2021) | https://www.light-house.org/wp-content/uploads/2021/05/Residential-Construction-Waste-Analysis-May-27-2021.pdf | bundled in docs/sources/. |
 | Per-house demolition wood yield | ~28.8 t wood per 1,300 sq ft SFD | Metro Vancouver, Demolition Waste Generation Rates Calculator (via Light House) | live tool | https://metrovancouver.org/services/solid-waste/demolition-waste-generation-rates-calculator | Coefficients computed in-tool, not displayed. |
+| National C&D diversion vs deconstruction | ~16% national vs ~85% on deconstruction projects | Canadian Architect, "Reuse of Wood C&D Waste: Potentials for Canada" | 2023 | https://www.canadianarchitect.com/reuse-of-wood-construction-and-demolition-waste-potentials-for-canada/ | Deconstruction lifts diversion roughly 5x. |
+| Federal C&D waste diversion target | 90% | Government of Canada, Greening Government Strategy | current | https://www.canada.ca/en/treasury-board-secretariat/services/innovation/greening-government/government-canada-progress-on-environmental-indicators/construction-renovation-demolition-waste.html | Federal operations target. |
 
 ## Demand and economics
 
@@ -59,6 +61,8 @@ Corrections from the June 2026 source review are listed at the end.
 | Mass timber / DLT from reclaimed boards | glue-free DLT pilot | InnoRenew CoE, EcoDLT project | Sep 2024 - Feb 2027 | https://innorenew.eu/project/lifecycle-extension-salvaged-wooden-materials-reuse-dowel-laminated-timber-ecodlt/ | EU. Canadian movers: Urban Machine, All Bay Lumber. |
 | Housing starts (demand anchor) | 259,028 in 2025 (+5.6%) | CMHC, "Housing starts up 5.6% in 2025" | Jan 16, 2026 | https://www.cmhc-schl.gc.ca/media-newsroom/news-releases/2026/housing-starts-december-2025 | |
 | Global reclaimed lumber market (context) | USD 59.9B (2025) | Mordor Intelligence, Reclaimed Lumber Market | updated May 14, 2026 | https://www.mordorintelligence.com/industry-reports/reclaimed-lumber-market | Global only; vendor estimate. |
+| North American reclaimed lumber market (context) | ~US$12.4B (2024); flooring & furniture lead | Global Growth Insights; market.us, Reclaimed Lumber Market | 2024-2025 | https://market.us/report/global-reclaimed-lumber-market/ | Vendor estimates; used for regional/segment structure only. |
+| Canadian value-retention economy (context) | ~C$56B (2019) | Constructive Voices; TheFutureEconomy.ca | 2023 | https://thefutureeconomy.ca/interviews/from-rubble-resource-building-canada-circular-construction-future/ | Reuse/repair/refurbishment macro scale. |
 
 ## Policy levers (scenarios)
 

@@ -116,6 +116,23 @@ NATIONAL_SME_BY_STEP = {  # entities active at each value-chain step (sums > tot
 }
 RESTORE_COUNT = 102  # Habitat for Humanity ReStores, the dominant reuse-retail channel
 
+# Real sector-capacity context for the ecosystem and gap analyses, from dated
+# Canadian sources. (label, value, source with date)
+SECTOR_CONTEXT = [
+    ("Wood share of construction/renovation/demolition waste", "about 40%",
+     "City of Vancouver; ECCC CRD wood workshop (Feb 2024)"),
+    ("CRD wood available, Canada", "about 3.6 Mt per year",
+     "FPInnovations Info Note 15 (Sep 2023)"),
+    ("National construction and demolition diversion rate", "about 16%",
+     "Greening Government; Canadian Architect (2023)"),
+    ("Diversion achieved on deconstruction projects", "about 85%",
+     "Canadian Architect, Reuse of Wood C&D Waste (2023)"),
+    ("Federal C&D waste diversion target", "90%",
+     "Government of Canada, Greening Government Strategy"),
+    ("Habitat ReStores nationwide (reuse-retail)", "over 100",
+     "Habitat for Humanity Canada (2026)"),
+]
+
 
 def list_companies():
     """Return the named company directory as a list of dicts with stages."""
