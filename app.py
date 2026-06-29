@@ -1679,10 +1679,12 @@ if page == "How it works":
             "One sourced coefficient per step"]),
         ("04", "Uncertainty", ["Monte Carlo over every range",
             "P10 / P50 / P90 bands", "Tornado: the lever that matters"]),
-        ("05", "Outputs", ["5 to 10 year forecast", "Maps and gap analysis",
-            "Value and scenarios", "Platform roadmap"]),
-        ("06", "Demand & ecosystem", ["Real reclaimed-wood company directory",
-            "Demand segments and economics", "Why recoverable wood is not reclaimed"]),
+        ("05", "Outputs", ["Supply and demand forecasts to 2036",
+            "Maps, three-gap analysis, embodied carbon", "Value, scenarios, confidence scores",
+            "Matchmaking and platform roadmap"]),
+        ("06", "Demand & ecosystem", ["Demand drivers, segments and economics",
+            "Two-sided ecosystem: recovery firms and the buyers",
+            "Supply and demand registries that feed matchmaking"]),
     ]
     _badge = ("font-family:'JetBrains Mono',monospace;background:var(--gold);color:#fff;"
               "border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600")
