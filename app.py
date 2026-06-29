@@ -130,7 +130,7 @@ div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; font-var
   letter-spacing: .16em; font-size: 11px; color: var(--gold-text); }
 .hero-title { font-family: 'Source Serif 4', Georgia, serif; font-size: 2.4rem; line-height: 1.05;
   margin: 4px 0 8px; color: var(--head); font-weight: 600; }
-.hero-sub { color: var(--muted); max-width: 840px; font-size: 1.02rem; line-height: 1.5; }
+.hero-sub { color: var(--muted); max-width: 100%; font-size: 1.02rem; line-height: 1.5; }
 .hero-rule { height: 4px; width: 80px; background: var(--gold); border-radius: 3px; margin-top: 16px; }
 
 /* Sidebar vertical navigation (replaces the horizontal tab strip) */
@@ -395,7 +395,10 @@ if page == "Overview":
     </div>
     """, unsafe_allow_html=True)
     banner("hero.jpg", "Reclaimed wood")
-    cap("Reclaimed wood: abundant in Canada's building stock, and the focus of this layer.")
+    st.markdown(
+        "<p style='color:var(--muted);font-size:0.84rem;line-height:1.45;"
+        "margin:-0.6rem 0 1.15rem'>Reclaimed wood: abundant in Canada's building stock, "
+        "and the focus of this layer.</p>", unsafe_allow_html=True)
     nat = data["mc_nat"]
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Gross wood content", fmt_bf(summary["gross_bf"].sum()))

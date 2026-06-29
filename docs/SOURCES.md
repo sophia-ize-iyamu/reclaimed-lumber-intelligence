@@ -2,10 +2,8 @@
 
 Every coefficient in `config/` traces to a source below. Each row gives the
 value, the source, a publication date (month and year, day where known), a
-working URL, and notes. Links were web-verified in June 2026. Source PDFs that
+working URL, and notes. Source PDFs that
 are freely shareable are bundled in `docs/sources/`.
-
-Corrections from the June 2026 source review are listed at the end.
 
 ## Supply coefficients (wood content, recovery, grading)
 
@@ -72,19 +70,9 @@ Corrections from the June 2026 source review are listed at the end.
 | Mandatory deconstruction uplift | recovery ~0.30 to 0.70 | City of Vancouver Green Demolition By-law | 2014 (amended 2016, 2018) | https://bylaws.vancouver.ca/11023c.pdf | 95%+ diversion for full deconstruction; 75-90% minimums for pre-1950. |
 | C&D waste diversion (national) | scenarios to 90% | Delphi Group, "C&D Waste Diversion in Canada" (for ECCC) | Sep 2024 | https://delphi.ca/wp-content/uploads/2024/09/CD-Waste-Diversion-in-Canada-Exec-Summary-Report-Sep-2024.pdf | |
 
-## Corrections applied in this revision (June 2026 review)
+## Demand drivers and demand-side ecosystem
 
-- Author fix: the 1994 FPL single-family-construction source is **McKeever & Phelps**, not "McKee & McKeever."
-- Year fix: Falk, Cramer & Evans is **2013** (FPJ 62(7/8)), not 2012.
-- Year fix: StatCan "Boom goes the dynamite" was published **June 2023** (it analyzes 2022 data), not 2022.
-- Table fix: period-of-construction is StatCan **98-10-0233-01**; 98-10-0234-01 is "dwelling condition by tenure."
-- Link fix: Cavalli et al. now cited by **DOI** because the ScienceDirect page blocks direct access.
-- Outdated-price fix: the WoodWeb antique-beam figure is from **2010**; current prices now come from Green Mission (Feb 2026); Aurora Mills (Jan 2023) retained but flagged as aging.
-- Note: NAHB now sources **Madison's Lumber Price Index** (not Random Lengths) and publishes percentage change only.
-
-## Demand drivers and demand-side ecosystem (added June 2026)
-
-Added to close the supply/demand asymmetry. Market-research application shares and
+Market-research application shares and
 reclaimed pricing disagree firm-to-firm and are shown as ranges. Government,
 standards-body, and trade-press rows are firmer.
 
@@ -116,9 +104,8 @@ standards-body, and trade-press rows are firmer.
 | Structural-timber reuse barriers | Certification gap, unknown provenance | Taylor and Francis review | 2025 | https://www.tandfonline.com/doi/full/10.1080/17480272.2025.2517186 | Peer-reviewed |
 | Architect and designer count | Over 5,000 registered architects (approximate) | RAIC Vital Statistics; Interior Designers of Canada | 2024-2025 | https://chop.raic.ca/appendix-c-vital-statistics-provincial-and-territorial-associations-of-architects | Specifier channel; approximate |
 
-## Cost economics, jobs, and provincial diversion (added June 2026)
+## Cost economics, jobs, and provincial diversion
 
-Added to put visuals on the Economics, Supply gaps, Policy and Ecosystem pages.
 Cost-per-area and per-house figures are contractor and single-firm estimates shown
 as ranges or illustrative cases; government and StatCan rows are firmer.
 
@@ -152,7 +139,7 @@ than bundled: https://drive.google.com/file/d/1wXTFSXguiWjHS90OVRuzLCpoUnG_1SPQ/
 ## Caveats
 
 - The Light House SME report and the Guelph-Wellington full report have no public
-  URLs found as of June 2026; both are bundled or linked via project pages.
+  URLs; both are bundled or linked via project pages.
 - ECCC circularity pages block automated fetching; titles, dates, and content were
   confirmed by index and by the bundled PDFs.
 - Reclaimed price comparisons carry a unit trap: reclaimed is often quoted
