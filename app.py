@@ -22,7 +22,7 @@ import streamlit as st
 
 from config import assumptions as A
 from config import cmas as cma_cfg
-from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem
+from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem, refs
 from config.assumptions import val
 from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty, demand_registry
 
@@ -297,6 +297,68 @@ def cap(text):
         f"margin:0.1rem 0 0.5rem'>{text}</p>", unsafe_allow_html=True)
 
 
+# Per-page superscript references. _page_refs re-initialises every rerun (the whole
+# script re-executes), accumulates the sources the current page registers via ref(),
+# and footnotes() prints the dated, linked list at the bottom of that page.
+_page_refs = []
+
+
+def ref(label, url="", date=""):
+    """Register a source for the current page; return a superscript clickable marker."""
+    key = (label, url, date)
+    if key not in _page_refs:
+        _page_refs.append(key)
+    n = _page_refs.index(key) + 1
+    target = url if url else "#"
+    return (f"<sup style='font-size:0.72em'>[<a href='{target}' target='_blank' "
+            f"style='text-decoration:none'>{n}</a>]</sup>")
+
+
+def footnotes():
+    """Render the current page's numbered sources (date and link) at the bottom."""
+    if not _page_refs:
+        return
+    st.markdown("---")
+    lines = ["**Sources**"]
+    for i, (label, url, date) in enumerate(_page_refs, 1):
+        d = f" ({date})" if date else ""
+        lines.append(f"{i}. [{label}]({url}){d}" if url else f"{i}. {label}{d}")
+    st.markdown("  \n".join(lines))
+
+
+def rr(key):
+    """Register a curated, link-checked source (config/refs.py) by key; return the marker."""
+    return ref(*refs.REFS[key])
+
+
+# Sources each page draws on, listed in that page's footnotes with a date and link.
+# Only publicly linkable sources appear (the CWC paper and the professor's note are
+# internal drafts, cited with dates on the Cascade strategy page instead).
+PAGE_SOURCES = {
+    "Overview": ["statcan_boom", "statcan_demo_type", "elling15", "statcan_pop"],
+    "Municipal baseline": ["statcan_vintage", "statcan_demo_type", "toronto_permits", "vancouver_permits"],
+    "Hotspots & archetypes": ["statcan_boom", "statcan_vintage", "mckeever94", "elling15"],
+    "Forecast & uncertainty": ["statcan_boom", "toronto_permits", "vancouver_permits", "oregon_deq"],
+    "Chain of evidence": ["toronto_permits", "mckeever94", "falk13", "oregon_deq", "swst_grading",
+                          "reclaimed_price", "bergman13"],
+    "Supply gaps": ["oregon_deq", "habitat_restore", "elling15"],
+    "Policy & capacity": ["van_bylaw", "waste_hierarchy", "eccc_circularity", "calrecycle", "swst_grading"],
+    "Embodied carbon": ["bergman13", "athena", "eccc_circularity"],
+    "Assumptions": ["mckeever94", "falk13", "elling15", "oregon_deq", "reclaimed_price", "statcan_vintage"],
+    "Sources & void": ["toronto_permits", "vancouver_permits", "statcan_boom", "statcan_vintage", "statcan_pop"],
+    "How it works": ["toronto_permits", "vancouver_permits", "statcan_boom", "elling15"],
+    "Demand segments": ["eccc_circularity", "habitat_restore"],
+    "Demand drivers": ["eccc_circularity", "waste_hierarchy"],
+    "Economics": ["oregon_deq", "reclaimed_price", "van_bylaw"],
+    "Ecosystem": ["habitat_restore", "eccc_circularity"],
+    "Demand gaps": ["eccc_circularity"],
+    "Platform roadmap": ["eccc_circularity", "toronto_permits"],
+    "Supply registry": ["toronto_permits", "vancouver_permits"],
+    "Demand registry": ["eccc_circularity", "habitat_restore"],
+    "Matchmaking": ["toronto_permits", "eccc_circularity"],
+}
+
+
 _IMG_DIR = os.path.join(os.path.dirname(__file__), "assets", "img")
 
 # CCC feedback (July 2026): stock images distract from the information-rich pages.
@@ -467,7 +529,9 @@ if page == "Overview":
         "metros could recover from building demolitions, where it is, and under what assumptions, for "
         "policymakers sizing the opportunity and for recovery operators planning ahead. Every number traces "
         "to a source on the Assumptions page, and each metro carries a data-quality tier and an uncertainty "
-        "band, so you can see what is measured versus modelled.")
+        "band, so you can see what is measured versus modelled."
+        + rr("statcan_boom") + rr("elling15"),
+        unsafe_allow_html=True)
     nat = data["mc_nat"]
     _geo = summary.copy()
     _geo["province"] = _geo["cma"].map(ecosystem.CMA_PROVINCE).fillna("Other")
@@ -568,7 +632,8 @@ if page == "Municipal baseline":
          "curve (older homes are torn down at higher rates)." if rec["vintage_is_real"]
                 else "Era mix of demolitions: calibrated stock-age profile, weighted by estimated "
                      "teardown propensity.")
-               + f" Demolition source: {sub['source'].iloc[0]}.")
+               + f" Demolition source: {sub['source'].iloc[0]}."
+               + rr("statcan_vintage") + rr("statcan_demo_type"))
 
     colA, colB = st.columns(2)
     with colA:
@@ -736,7 +801,9 @@ if page == "Chain of evidence":
         "This page traces the model end to end for one city, so every output can be followed back to its "
         "input. It answers a simple question: how does the tool get from a demolition permit to a "
         "board-foot, dollar, and carbon estimate? The example is Toronto, base year. Every multiplier below "
-        "is a sourced coefficient you can change on the Assumptions page.")
+        "is a sourced coefficient you can change on the Assumptions page."
+        + rr("toronto_permits") + rr("mckeever94") + rr("oregon_deq"),
+        unsafe_allow_html=True)
     reg = build_registry(scenario_key)
     tor = data["supply"][data["supply"]["cma"] == "Toronto"]
     tdemo = data["demo"][data["demo"]["cma"] == "Toronto"]
@@ -1487,9 +1554,9 @@ if page == "Embodied carbon":
     c2.metric("Avoided landfill methane", f"{land:,.0f} t CO2e/yr", "not landfilling the wood", delta_color="off")
     c3.metric("Biogenic carbon kept in use", f"{bio:,.0f} t CO2e/yr", "vs landfill or burning", delta_color="off")
     c4.metric("Total climate benefit", f"{av + land + bio:,.0f} t CO2e/yr", delta_color="off")
-    cap("Avoided landfill methane: about 217 kg CO2e per tonne of wood diverted (Napier et al. 2007 "
-        "via US EPA WARM and Athena, in [USDA FS Bergman et al. 2013]"
-        "(https://research.fs.usda.gov/download/treesearch/43547.pdf)).")
+    cap("Avoided landfill methane: about 217 kg CO2e per tonne of wood diverted, from Napier et al. 2007 "
+        "via US EPA WARM and Athena."
+        + rr("bergman13") + rr("athena"))
     st.info(f"Toronto Green Standard v4 lets reused or salvaged components count as zero upfront "
             f"embodied carbon against its {carbon.TGS_TIER2_CAP} (Tier 2) and {carbon.TGS_TIER3_CAP} "
             "(Tier 3) kg CO2e/m2 caps, so reclaimed lumber directly helps projects meet the cap.")
@@ -2139,3 +2206,9 @@ if page == "Cascade strategy":
             st.markdown(f"- [{_label}]({_url}) ({_date})")
         else:
             st.markdown(f"- {_label} ({_date}) — internal draft, not yet public")
+
+
+# Register this page's curated sources, then render the dated, linked footnotes.
+for _pk in PAGE_SOURCES.get(page, []):
+    rr(_pk)
+footnotes()
