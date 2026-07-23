@@ -405,10 +405,10 @@ NAV = [
     ("Supply (core)", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
                        "Chain of evidence", "Supply gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
-    ("Reference", ["Assumptions", "Sources & void", "How it works"]),
     ("Supporting & future layers", ["Cascade strategy", "Demand segments", "Demand drivers",
                                     "Economics", "Ecosystem", "Demand gaps", "Platform roadmap",
                                     "Supply registry", "Demand registry", "Matchmaking"]),
+    ("Reference", ["Assumptions", "Sources & void", "How it works"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
 if "page" not in st.session_state or st.session_state.page not in PAGES:
@@ -2163,14 +2163,14 @@ if page == "Cascade strategy":
     with colc:
         st.caption("Constraint cascade (Pelech): easiest market first")
         cc = df.sort_values("ease").reset_index(drop=True)
-        fcc = px.bar(cc, x="ease_score", y="pathway", orientation="h", color="tier_label",
-                     color_discrete_map=TIERCOL,
-                     labels={"ease_score": "Easier to unlock →", "pathway": "", "tier_label": ""})
-        fcc.update_layout(height=340, margin=dict(l=10, r=10, t=10, b=10),
-                          yaxis=dict(autorange="reversed"), showlegend=False)
+        fcc = go.Figure(go.Funnel(y=cc["pathway"], x=cc["ease_score"], textinfo="none",
+                                  marker=dict(color=[TIERCOL[t] for t in cc["tier_label"]])))
+        fcc.update_layout(height=400, margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
         st.plotly_chart(fcc, width="stretch")
-    cap("The functional cascade puts structural reuse first (the hardest); the constraint cascade puts "
-        "the architectural and design markets first (the easiest, at 3 to 10x commodity value).")
+    cap("Both are funnels, so the reordering is direct: the functional cascade puts structural reuse at "
+        "the top (the hardest), while the constraint cascade puts the architectural and design markets at "
+        "the top (the easiest, at 3 to 10x commodity value). Funnel width is ease of unlocking; the red "
+        "band at the narrow bottom is structural reuse, which is code-gated.")
 
     st.markdown("#### Reclamation timeline: when each pathway unlocks")
     tl = pd.DataFrame(casc.RECLAMATION_TIMELINE, columns=["item", "years", "note"])
