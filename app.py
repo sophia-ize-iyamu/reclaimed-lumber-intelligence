@@ -407,7 +407,7 @@ NAV = [
     ("The Supply Model", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
                           "Chain of evidence", "Supply gaps"]),
     ("Policy & Carbon Impact", ["Policy & capacity", "Embodied carbon"]),
-    ("Beyond the supply model", ["About these layers", "Cascade strategy", "Demand segments",
+    ("Beyond the Supply Model", ["About these layers", "Cascade strategy", "Demand segments",
                                  "Demand drivers", "Economics", "Ecosystem", "Demand gaps",
                                  "Platform roadmap", "Supply registry", "Demand registry", "Matchmaking"]),
     ("References", ["Assumptions", "Sources & void", "How it works"]),
@@ -427,18 +427,23 @@ def _nav_pick(gid):
             st.session_state[k] = None
 
 
+def _titlecase(s):
+    """Capitalize the first letter of every word for nav display, keeping the rest."""
+    return " ".join(w[:1].upper() + w[1:] if w else w for w in s.split(" "))
+
+
 for _gi, (_header, _items) in enumerate(NAV):
     _gid = f"navgrp_{_gi}"
     if _gid not in st.session_state:
         st.session_state[_gid] = st.session_state.page if st.session_state.page in _items else None
     if _header:
         _active = st.session_state.page in _items
-        with st.sidebar.expander(_header, expanded=_active):
-            st.radio(f"nav {_gi}", _items, key=_gid, label_visibility="collapsed",
-                     on_change=_nav_pick, args=(_gid,))
+        with st.sidebar.expander(_titlecase(_header), expanded=_active):
+            st.radio(f"nav {_gi}", _items, key=_gid, format_func=_titlecase,
+                     label_visibility="collapsed", on_change=_nav_pick, args=(_gid,))
     else:
-        st.sidebar.radio(f"nav {_gi}", _items, key=_gid, label_visibility="collapsed",
-                         on_change=_nav_pick, args=(_gid,))
+        st.sidebar.radio(f"nav {_gi}", _items, key=_gid, format_func=_titlecase,
+                         label_visibility="collapsed", on_change=_nav_pick, args=(_gid,))
 page = st.session_state.page
 
 st.sidebar.markdown("---")
