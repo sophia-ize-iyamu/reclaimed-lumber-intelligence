@@ -22,7 +22,7 @@ import streamlit as st
 
 from config import assumptions as A
 from config import cmas as cma_cfg
-from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem, refs, definitions
+from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem, refs, definitions, calc
 from config.assumptions import val
 from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty, demand_registry
 
@@ -304,6 +304,18 @@ def defn_table(title, rows):
                      width="stretch", hide_index=True)
 
 
+def feed_status(dat):
+    """Per-city live-vs-cached status, read from the demolition table's own source labels."""
+    demo = dat["demo"]
+    rows = []
+    for city, refkey in (("Toronto", "toronto_permits"), ("Vancouver", "vancouver_permits")):
+        m = demo[demo["cma"] == city]
+        label = str(m["source"].iloc[0]) if len(m) else ""
+        rows.append({"city": city, "live": "live" in label.lower(), "label": label,
+                     "url": refs.REFS[refkey][1]})
+    return rows
+
+
 # Global, stable footnote numbering. Every source in config/refs.py has a fixed
 # number, so a citation reads the same number on every page (numbering is continuous
 # across the whole app, not restarted per page). rr() cites a source and returns its
@@ -352,7 +364,7 @@ PAGE_SOURCES = {
     "Policy & capacity": ["van_bylaw", "waste_hierarchy", "eccc_circularity", "calrecycle", "swst_grading"],
     "Embodied carbon": ["bergman13", "athena", "eccc_circularity"],
     "Assumptions": ["mckeever94", "falk13", "elling15", "oregon_deq", "reclaimed_price", "statcan_vintage"],
-    "Sources & void": ["toronto_permits", "vancouver_permits", "statcan_boom", "statcan_vintage", "statcan_pop"],
+    "Sources & coverage": ["toronto_permits", "vancouver_permits", "statcan_boom", "statcan_vintage", "statcan_pop"],
     "How it works": ["toronto_permits", "vancouver_permits", "statcan_boom", "elling15"],
     "Demand segments": ["eccc_circularity", "habitat_restore"],
     "Demand drivers": ["eccc_circularity", "waste_hierarchy"],
@@ -417,7 +429,7 @@ NAV = [
     ("Beyond the Supply Model", ["About these layers", "Cascade strategy", "Demand segments",
                                  "Demand drivers", "Economics", "Ecosystem", "Demand gaps",
                                  "Platform roadmap", "Supply registry", "Demand registry", "Matchmaking"]),
-    ("References", ["Assumptions", "Sources & void", "How it works"]),
+    ("References", ["Assumptions", "Sources & coverage", "How it works"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
 if "page" not in st.session_state or st.session_state.page not in PAGES:
@@ -463,7 +475,7 @@ st.sidebar.caption(_scenarios[scenario_key]["note"])
 allow_network = st.sidebar.toggle(
     "Use live open-data feeds", value=False,
     help="Pull live Toronto and Vancouver demolition permits by year (offline fallback if unreachable).")
-st.sidebar.caption("Every coefficient is sourced. See the Sources & void section.")
+st.sidebar.caption("Every coefficient is sourced. See the Sources and coverage section.")
 
 st.sidebar.markdown("---")
 with st.sidebar.expander("Glossary"):
@@ -508,6 +520,19 @@ overrides_sig = tuple(sorted(
     (str(k), v) for k, v in st.session_state.get("assumption_overrides", {}).items()))
 data = run_pipeline(overrides_sig, allow_network, scenario_key)
 summary = data["summary"]
+
+_feeds = feed_status(data)
+if allow_network:
+    _cached_feeds = [f["city"] for f in _feeds if not f["live"]]
+    if _cached_feeds:
+        st.sidebar.warning("Live is on, but " + " and ".join(_cached_feeds)
+                           + " could not be reached and fell back to cached figures. "
+                           "See Sources and coverage.")
+    else:
+        st.sidebar.success("Live feeds on: " + " and ".join(f["city"] for f in _feeds)
+                           + " pulled live. Confirm on Sources and coverage.")
+else:
+    st.sidebar.caption("Live feeds off. Toronto and Vancouver use cached real figures.")
 
 
 # --------------------------------------------------------------------------- #
@@ -1960,17 +1985,31 @@ if page == "Assumptions":
 
 
 # --------------------------------------------------------------------------- #
-# Sources & void
+# Sources and coverage
 # --------------------------------------------------------------------------- #
-if page == "Sources & void":
-    st.subheader("Sources registry & void / coverage analysis")
-    st.markdown("What data is real, what is modelled, and where the gaps are. Coverage "
+if page == "Sources & coverage":
+    st.subheader("Sources and coverage")
+    st.markdown("What data is real, what is modelled, and where the gaps are. The data-quality "
                 "tier drives the demolition-count uncertainty in the Monte Carlo model.")
+    st.markdown("**Live feed status**")
+    if not allow_network:
+        st.info("Live feeds are off, so Toronto and Vancouver use cached real figures. Turn on "
+                "'Use live open-data feeds' in the sidebar to pull live permits, then check back here.")
+    for _f in feed_status(data):
+        _mark = "live" if _f["live"] else "cached fallback"
+        st.markdown(f"- **{_f['city']}: {_mark}.** {_f['label']}. "
+                    f"[Open the raw feed to verify]({_f['url']})")
+    st.caption("When live is on, the label reads 'live' with the exact year window pulled from the "
+               "open-data endpoint. If the endpoint is unreachable it falls back to a cached real "
+               "figure and the label reads 'cached'. Open a feed to see the same public data yourself.")
     st.markdown("**Source registry**")
     st.dataframe(ingest.source_registry(), width="stretch", hide_index=True)
-    st.markdown("**Void / coverage report (per CMA)**")
+    st.markdown("**Coverage report (per CMA): what is real versus modelled**")
     void = data["void"].copy()
     void["confidence_band_pm"] = void["confidence_band_pm"].map(lambda x: f"+/- {x*100:.0f}%")
+    void = void.rename(columns={"cma": "CMA", "coverage_tier": "data quality", "source": "source",
+                                "vintage_real": "vintage is real", "confidence_band_pm": "confidence band",
+                                "permit_feed": "permit feed", "gap_note": "note"})
     st.dataframe(void, width="stretch", hide_index=True)
     st.markdown("**Data quality across the 25 CMAs**")
     tier_counts = data["void"]["coverage_tier"].value_counts().reset_index()
@@ -1980,6 +2019,9 @@ if page == "Sources & void":
                  labels={"cma_count": "number of CMAs", "coverage_tier": "data quality"})
     style_chart(fig, 300, showlegend=False)
     st.plotly_chart(fig, width="stretch")
+    st.markdown("The numbered footnotes at the bottom of each page cite the key sources that page "
+                "uses, numbered consistently across the whole app. The full list below is the complete "
+                "provenance: every coefficient and every CMA's coverage row, so it runs much longer.")
     src = os.path.join(os.path.dirname(__file__), "docs", "SOURCES.md")
     if os.path.exists(src):
         with st.expander("Full source list and coefficient provenance (docs/SOURCES.md)"):
@@ -2186,6 +2228,41 @@ if page == "Cascade strategy":
     df["tier_label"] = df["tier"].map({"A": "Legal today (Tier A)", "B": "Code-gated (Tier B)"})
     TIERCOL = {"Legal today (Tier A)": "#2e7d32", "Code-gated (Tier B)": "#c62828"}
 
+    with st.expander("How these numbers are derived (raw scores, scales, and the math behind each chart)"):
+        st.markdown(
+            "These pathway scores are a reasoned synthesis of two dated sources, the CWC secondary-markets "
+            "report (March 2026) and the Pelech constraint-cascade note (10 Jul 2026). They are expert "
+            "scores, not outputs of the supply model, and anything beyond those documents is an estimate. "
+            "The raw scores are below, followed by the exact transform behind every chart.")
+        _score = df[casc.PATHWAY_COLS].rename(columns={
+            "pathway": "Pathway", "functional_rank": "functional_rank (1 high structural..5 energy)",
+            "ease": "ease (1 easy..5 hard)", "premium_x": "premium_x (value / commodity)",
+            "market_now": "market_now (0..1 exists today)", "years": "years (to scale)", "tier": "tier"})
+        st.dataframe(_score, width="stretch", hide_index=True)
+        st.markdown(
+            "**What each score means and where it comes from**\n"
+            "- **functional_rank** 1 to 5, 1 = highest structural use, from the CWC material hierarchy "
+            "(sections 1.1.2 and 1.1.5).\n"
+            "- **ease** 1 to 5, 1 = easiest to unlock, from the Pelech constraint framing plus CWC barriers.\n"
+            "- **premium_x**, reclaimed value as a multiple of commodity value, from CWC 1.1.3 to 1.1.4 "
+            "(architectural 3 to 10x).\n"
+            "- **market_now** 0 to 1, the share of that market that exists today (estimate).\n"
+            "- **years**, years to scale the pathway (estimate).\n"
+            "- **tier**, A = legal today (non-structural), B = code-gated (structural reuse).")
+        st.markdown(
+            "**The math behind each chart**\n"
+            "- **Where to start (bubble):** x is ease_score = 6 minus ease, y is premium_x, bubble size is "
+            "market_now, colour is tier. The top-right corner is high value and easy to unlock.\n"
+            "- **Two lenses (heatmap),** each column rescaled to 0 to 1: Functionality = (6 minus "
+            "functional_rank) / 5; Value premium = premium_x / max(premium_x); Ease to unlock = "
+            "ease_score / 5; Market today = market_now; Speed = 1 minus years / max(years).\n"
+            "- **Constraint funnel:** pathways sorted by ease, easiest first; funnel width is ease_score.\n"
+            "- **Functional funnel:** the CWC hierarchy order, highest structural use first.\n"
+            "- **Constraint and leverage matrix:** x is ease_score = 5 minus ease, y is impact, bubble "
+            "size is impact; the top-right is high impact and easy to do.\n"
+            "- **Ranking:** there is no hidden composite score. The constraint cascade orders pathways by "
+            "ease; the functional cascade orders them by functional_rank.")
+
     st.markdown("#### Where to start: value premium against ease of unlocking")
     fig = px.scatter(df, x="ease_score", y="premium_x", size="market_now", color="tier_label",
                      text="pathway", size_max=42, color_discrete_map=TIERCOL,
@@ -2268,6 +2345,11 @@ if page == "Cascade strategy":
     # Sources render via the global footnotes() at the end of the script,
     # using the same stable numbering as every other page.
 
+
+# A per-page "how this is calculated" dropdown, faithful to the model code (config/calc.py).
+if page in calc.CALC:
+    with st.expander("How this is calculated"):
+        st.markdown(calc.CALC[page])
 
 # Register this page's curated sources, then render the dated, linked footnotes.
 for _pk in PAGE_SOURCES.get(page, []):
