@@ -21,8 +21,8 @@ uncertainty in those coefficients flows through to every number on screen.
   companies (ECCC, September 2024) and the national census of 252 SMEs (Light House
   for ECCC, March 2026), plus demand segments, economics, and a ranked diagnosis of
   why recoverable wood is not reclaimed.
-- **Real data where it exists.** Toronto demolition permits are pulled live from
-  Toronto Open Data (counted by year, with the incomplete recent years dropped).
+- **Real data where it exists.** Toronto and Vancouver demolition permits are pulled
+  live from their city open data (counted by year, with the incomplete recent years dropped).
   CMA populations, dwelling counts, and (for the six largest CMAs) housing-stock
   age distributions are real StatCan figures. Everything modelled is labelled as
   such.
@@ -80,7 +80,7 @@ app/
     assumptions.py        sourced coefficient registry with low/high ranges and scenarios
   pipeline/
     canonical.py          canonical schema and validators
-    ingest.py             live Toronto connector, StatCan-derived counts, void report
+    ingest.py             live Toronto & Vancouver connectors, StatCan-derived counts, void report
     model.py              framing-based recovery cascade and value layer
     forecast.py           5-10 yr forecast with coverage bands
     uncertainty.py        Monte Carlo and tornado sensitivity
@@ -100,9 +100,9 @@ app/
 - `degradation_per_decade` is the weakest coefficient. The aged-wood literature
   finds sound wood loses little intrinsic strength with age, since real loss is
   condition-driven. It's kept small with a wide low bound (0).
-- Demolition figures outside Toronto come from StatCan 2022 single-year data
-  (single-detached at CMA scale, grossed up) or national-rate estimates. Toronto
-  alone runs on live by-year data.
+- Demolition figures outside Toronto and Vancouver come from StatCan 2022 single-year
+  data (single-detached at CMA scale, grossed up) or national-rate estimates. Toronto
+  and Vancouver run on live by-year data.
 - Reclaimed value figures are indicative dealer prices rather than transaction-grade,
   and they carry a unit caveat (reclaimed is full-dimension rough sawn, new is dressed).
 - Ecosystem actors are synthetic placeholders. The gap logic is real and runs

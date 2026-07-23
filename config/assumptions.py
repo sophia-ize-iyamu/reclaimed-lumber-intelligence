@@ -114,6 +114,17 @@ COHORT_TO_ARCHETYPE = {
     "post2010": "sfd_recent",
 }
 
+# Relative teardown propensity by building era. Demolition hazard rises sharply
+# with building age, so the era mix of the DEMOLITION FLOW is not the era mix of
+# the standing stock. Each cohort's standing-stock share is multiplied by these
+# relative rates and renormalised to get the demolition era mix. ESTIMATED: no
+# Canadian vintage-of-demolitions series exists (StatCan breaks demolitions by
+# structure type, not construction year), so this is a reasoned age-hazard curve.
+# Editable, and deliberately conservative (about 12x from newest to oldest).
+TEARDOWN_PROPENSITY = {
+    "pre1946": 2.5, "1946_1980": 1.6, "1981_2000": 1.0, "2001_2010": 0.5, "post2010": 0.2,
+}
+
 # Fraction of total wood content that is dimensional framing (framing -> total).
 DIMENSIONAL_SHARE_OF_TOTAL = C(
     0.78, 0.65, 0.85, "fraction", "McKeever 1994 volume math; Oregon DEQ 2019",
@@ -232,6 +243,7 @@ def get_assumptions():
     return {
         "archetypes": copy.deepcopy(ARCHETYPES),
         "cohort_to_archetype": dict(COHORT_TO_ARCHETYPE),
+        "teardown_propensity": dict(TEARDOWN_PROPENSITY),
         "dimensional_share_of_total": copy.deepcopy(DIMENSIONAL_SHARE_OF_TOTAL),
         "recovery": copy.deepcopy(RECOVERY),
         "method_factor": dict(METHOD_FACTOR),

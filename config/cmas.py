@@ -9,7 +9,7 @@ StatCan Building Permits Survey (national rate about 0.74 residential demolition
 per 1,000 dwellings per year, 2022), with real per-CMA figures for the six cities StatCan
 publishes and regional estimates elsewhere. See docs/SOURCES.md.
 
-Only Toronto is wired to a live open-data connector; coverage_tier records that.
+Toronto and Vancouver are wired to live open-data connectors; coverage_tier records that.
 """
 
 # Real StatCan 2021 period-of-construction distributions for the largest CMAs.
@@ -39,7 +39,7 @@ VINTAGE_PROFILES = {
 _CMA_ROWS = [
     ("Toronto",                      6202225, 2394205, 43.6532, -79.3832, "mature",   0.00060, "high"),
     ("Montreal",                     4291732, 1929263, 45.5019, -73.5674, "old_east", 0.00040, "medium"),
-    ("Vancouver",                    2642825, 1104532, 49.2827, -123.1207, "new_west", 0.00131, "medium"),
+    ("Vancouver",                    2642825, 1104532, 49.2827, -123.1207, "new_west", 0.00131, "high"),
     ("Ottawa-Gatineau",             1488307,  638013, 45.4215, -75.6972, "mature",   0.00022, "medium"),
     ("Calgary",                      1481806,  594513, 51.0447, -114.0719, "growth",  0.00090, "medium"),
     ("Edmonton",                     1418118,  589554, 53.5461, -113.4938, "growth",  0.00087, "medium"),

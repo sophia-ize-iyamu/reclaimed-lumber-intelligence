@@ -52,13 +52,13 @@ already in the app is the schema it would feed.
 
 ### Phased roadmap
 
-**Phase 0 (now): defensible intelligence layer.** This app. One real connector
-(Toronto), modelled coverage for the other 24 CMAs, a transparent assumptions
-registry, and an honest void report. What this phase buys is credibility: numbers
-CCC can defend in front of municipalities and funders.
+**Phase 0 (now): defensible intelligence layer.** This app. Two real connectors
+(Toronto and Vancouver), modelled coverage for the other 23 CMAs, a transparent
+assumptions registry, and an honest void report. What this phase buys is credibility:
+numbers CCC can defend in front of municipalities and funders.
 
 **Phase 1 (0 to 6 months): widen real coverage.** Connect the next tier of
-machine-readable permit feeds (Vancouver, Ottawa, Calgary, Hamilton). Each new
+machine-readable permit feeds (Calgary, Edmonton, Ottawa, Hamilton). Each new
 connector lands behind the same canonical schema, so the model stays put. Coverage
 tiers climb from low to medium to high as feeds come online, and the confidence
 bands tighten on their own. The void report becomes the public scorecard of
@@ -115,9 +115,9 @@ valuable as they accumulate.
 
 ### Limitations
 
-- Base-year demolition figures outside Toronto rely on StatCan 2022 CMA figures or
-  a national-rate estimate rather than live feeds. Toronto alone draws live by-year
-  data. Monte Carlo confidence bands reflect this by coverage tier.
+- Base-year demolition figures outside Toronto and Vancouver rely on StatCan 2022 CMA
+  figures or a national-rate estimate rather than live feeds. Toronto and Vancouver
+  draw live by-year data. Monte Carlo confidence bands reflect this by data-quality tier.
 - The recovery cascade uses sourced coefficients from US deconstruction literature
   (USDA FPL, Oregon DEQ) applied to Canadian stock. The sensitivity tornado shows
   recovery method as the dominant uncertainty, so Phase 1 should validate it against

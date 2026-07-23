@@ -8,8 +8,15 @@ Two jobs:
          incomplete years (the dataset holds "cleared" permits, so recent years
          lag), and takes a stable-window mean plus a real growth trend. Falls
          back to a cached real figure if the network is unavailable.
-       - The other 24 CMAs are generated from real StatCan dwelling counts x
+       - Vancouver pulls REAL demolition permits from Vancouver Open Data
+         (Opendatasoft): it counts typeofwork = "Demolition / Deconstruction"
+         by year. These are issued-dated, so only the partial current year is
+         dropped before the stable-window mean. Same offline fallback.
+       - The other 23 CMAs are generated from real StatCan dwelling counts x
          each CMA's real/calibrated vintage mix x a sourced demolition intensity.
+       - For every CMA, the era split of demolitions re-weights the standing-stock
+         age mix by an estimated teardown-propensity curve (older homes are torn
+         down at higher rates), so the flow is not assumed to match the stock.
   2. Produce a void / coverage report: per CMA, what is real, what is modelled,
      and the resulting confidence tier.
 
@@ -27,12 +34,23 @@ from pipeline import canonical
 CKAN = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/datastore_search"
 TORONTO_RESOURCE_ID = "a96c0ba4-3026-402b-b09d-5b1268b8f810"  # Cleared Building Permits since 2017
 
+# Vancouver Open Data (Opendatasoft Explore v2.1). Demolition is a distinct
+# typeofwork value, "Demolition / Deconstruction", inside the issued-permits set.
+VANCOUVER_ODS = ("https://opendata.vancouver.ca/api/explore/v2.1/catalog/"
+                 "datasets/issued-building-permits/records")
+VANCOUVER_WORK = "Demolition / Deconstruction"
+
 COHORTS = ["pre1946", "1946_1980", "1981_2000", "2001_2010", "post2010"]
 
 # Cached real Toronto figures (stable window 2017-2022 mean from a prior live
 # pull) used when the network is unavailable. Provenance stays honest.
 TORONTO_CACHED = {"annual": 1277, "growth": 0.015,
                   "source": "Toronto Open Data (cached 2017-2022 mean)", "tier": "high"}
+
+# Cached real Vancouver figures (2020-2025 complete-year mean from a live pull).
+# Vancouver permits are issued-dated, so there is no multi-year clearing lag.
+VANCOUVER_CACHED = {"annual": 710, "growth": 0.0,
+                    "source": "Vancouver Open Data (cached 2020-2025 mean)", "tier": "high"}
 
 
 # --------------------------------------------------------------------------- #
@@ -43,6 +61,9 @@ def source_registry():
         {"source": "Toronto Open Data - Cleared Building Permits", "type": "Demolition permits",
          "coverage": "Toronto", "status": "live connector (by-year), offline fallback",
          "license": "Open Government Licence - Toronto", "cadence": "daily"},
+        {"source": "Vancouver Open Data - Issued building permits", "type": "Demolition permits",
+         "coverage": "Vancouver", "status": "live connector (by-year), offline fallback",
+         "license": "Open Government Licence - Vancouver", "cadence": "daily (current year)"},
         {"source": "StatCan 98-10-0014 - Population & dwellings", "type": "Population / dwellings",
          "coverage": "All 25 CMAs", "status": "embedded (real)", "license": "StatCan Open Licence",
          "cadence": "5-year"},
@@ -53,7 +74,7 @@ def source_registry():
          "coverage": "6 CMAs real, rest national rate", "status": "embedded",
          "license": "StatCan Open Licence", "cadence": "annual"},
         {"source": "Municipal demolition permit portals", "type": "Demolition permits",
-         "coverage": "24 CMAs", "status": "not yet connected", "license": "varies", "cadence": "varies"},
+         "coverage": "23 CMAs", "status": "not yet connected", "license": "varies", "cadence": "varies"},
         {"source": "Reuse / salvage directories", "type": "Ecosystem actors",
          "coverage": "All 25 CMAs", "status": "synthetic placeholder", "license": "n/a", "cadence": "n/a"},
     ])
@@ -139,6 +160,66 @@ def toronto_demolitions(allow_network=True):
 
 
 # --------------------------------------------------------------------------- #
+# Vancouver live connector
+# --------------------------------------------------------------------------- #
+def _fetch_vancouver_by_year(timeout=20):
+    """Return {year:int -> count} for typeofwork='Demolition / Deconstruction', or None."""
+    try:
+        import requests
+    except Exception:
+        return None
+    try:
+        params = {"select": "issueyear, count(*) as n",
+                  "where": f'typeofwork="{VANCOUVER_WORK}"',
+                  "group_by": "issueyear", "order_by": "issueyear", "limit": 100}
+        r = requests.get(VANCOUVER_ODS, params=params, timeout=timeout)
+        if r.status_code != 200:
+            return None
+        counts = {}
+        for rec in r.json().get("results", []):
+            y = rec.get("issueyear")
+            n = rec.get("n")
+            if y is not None and str(y).isdigit() and n is not None:
+                counts[int(y)] = int(n)
+        return counts or None
+    except Exception:
+        return None
+
+
+def _vancouver_window(by_year):
+    """
+    Vancouver permits are issued-dated (no multi-year clearing lag), so only the
+    current in-progress year is dropped. Average the last 6 complete years and
+    fit a real growth trend. Return (annual_mean, growth_rate, window).
+    """
+    if not by_year:
+        return None
+    years = sorted(by_year)
+    complete = years[:-1] if len(years) > 1 else years  # drop the partial current year
+    window = complete[-6:]
+    if len(window) < 2:
+        window = complete or years
+    vals = np.array([by_year[y] for y in window], dtype=float)
+    annual = float(vals.mean())
+    xs = np.arange(len(window), dtype=float)
+    slope = np.polyfit(xs, vals, 1)[0] if len(window) >= 2 else 0.0
+    growth = float(np.clip(slope / annual, -0.03, 0.05)) if annual > 0 else 0.0
+    return annual, growth, window
+
+
+def vancouver_demolitions(allow_network=True):
+    """Return (annual_count, growth_rate, source_label, tier, by_year_or_None)."""
+    if allow_network:
+        w = _vancouver_window(_fetch_vancouver_by_year())
+        if w:
+            annual, growth, window = w
+            label = f"Vancouver Open Data (live, {window[0]}-{window[-1]} mean)"
+            return annual, growth, label, "high", None
+    c = VANCOUVER_CACHED
+    return c["annual"], c["growth"], c["source"], c["tier"], None
+
+
+# --------------------------------------------------------------------------- #
 # Demolition table
 # --------------------------------------------------------------------------- #
 def build_demolition_table(base_year=None, allow_network=True):
@@ -146,8 +227,10 @@ def build_demolition_table(base_year=None, allow_network=True):
     reg = A.get_assumptions()
     if base_year is None:
         base_year = val(reg["forecast"]["base_year"])
+    prop = reg["teardown_propensity"]
 
     tor_annual, _, tor_source, tor_tier, _ = toronto_demolitions(allow_network)
+    van_annual, _, van_source, van_tier, _ = vancouver_demolitions(allow_network)
 
     rows = []
     for rec in cma_cfg.list_cmas():
@@ -155,16 +238,23 @@ def build_demolition_table(base_year=None, allow_network=True):
         vintage = rec["vintage"]
         if name == "Toronto":
             annual, source, tier = tor_annual, tor_source, tor_tier
+        elif name == "Vancouver":
+            annual, source, tier = van_annual, van_source, van_tier
         else:
             annual = rec["dwellings"] * rec["demolition_intensity"]
             source = "StatCan-derived (real dwellings x sourced rate)"
             tier = rec["coverage_tier"]
 
+        # The era mix of demolitions is NOT the era mix of the standing stock:
+        # teardown hazard rises with building age. Weight each cohort's stock
+        # share by an estimated teardown propensity, then renormalise.
+        w = {c: vintage[c] * prop.get(c, 1.0) for c in COHORTS}
+        wtot = sum(w.values()) or 1.0
         for cohort in COHORTS:
             rows.append({
                 "cma": name, "year": base_year, "cohort": cohort,
                 "archetype": reg["cohort_to_archetype"][cohort],
-                "permits": annual * vintage[cohort],
+                "permits": annual * (w[cohort] / wtot),
                 "source": source, "coverage_tier": tier,
             })
     return canonical.validate_demolitions(pd.DataFrame(rows))

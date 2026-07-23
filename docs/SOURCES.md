@@ -29,6 +29,7 @@ are freely shareable are bundled in `docs/sources/`.
 | CMA population & private dwellings | per-CMA counts | StatCan 2021 Census, Table 98-10-0014-01 | released Feb 9, 2022 | https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810001401 | |
 | Wood-frame share, single-detached | 0.98 | NRCan, "Back to basics: building with wood" | modified Apr 2026 | https://natural-resources.canada.ca/stories/simply-science/back-basics-building-wood-asknrcan | |
 | Toronto demolition permits (live, by year) | ~1,277 cleared demolition permits/yr | City of Toronto Open Data, Cleared Building Permits | dataset 2001-present | https://open.toronto.ca/dataset/building-permits-cleared-permits/ | The 77% single-detached share is the StatCan national figure above, not Toronto-specific. Portal shows a "Retired" flag; confirm before relying. |
+| Vancouver demolition permits (live, by year) | ~710 permits/yr (2020-2025 mean) | City of Vancouver Open Data, Issued building permits (typeofwork = "Demolition / Deconstruction") | current-year daily, from 2017 | https://opendata.vancouver.ca/explore/dataset/issued-building-permits/ | Issued-dated, so no multi-year clearing lag; only the partial current year is dropped. |
 
 ## Ecosystem and companies (demand-side, two-sided circularity)
 

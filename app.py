@@ -237,6 +237,54 @@ def fmt_m3(x, reg):
     return f"{x/reg['bf_per_m3']:,.0f} m3"
 
 
+def provenance_label(group, source):
+    """Classify a coefficient by provenance, per CCC's transparency request."""
+    s = (source or "").lower()
+    if group == "forecast":
+        return "Projected"
+    if group == "confidence_band":
+        return "Estimated"  # chosen band widths, not observed values
+    if any(k in s for k in ("claude", "gpt", "llm", "ai-generated", "ai generated")):
+        return "AI-generated"
+    if any(k in s for k in ("reasoned", "placeholder", "inferred", "engineering", "volume math")):
+        return "Estimated"
+    if any(k in s for k in ("live", "open data", "by-year", "opendatasoft", "ckan")):
+        return "Observed"
+    return "Published"
+
+
+def coefficient_rows(reg):
+    """Every model coefficient with value, range, provenance, and source."""
+    rows = []
+
+    def add(name, group, rec):
+        if not isinstance(rec, dict) or "value" not in rec:
+            return
+        rows.append({
+            "Coefficient": name,
+            "Value": rec["value"],
+            "Range": f"{rec.get('low', rec['value'])} to {rec.get('high', rec['value'])}",
+            "Unit": rec.get("unit", ""),
+            "Provenance": provenance_label(group, rec.get("source", "")),
+            "Source": rec.get("source", ""),
+        })
+
+    for av in reg["archetypes"].values():
+        for k in ("framing_bf_per_m2", "floor_area_m2", "wood_frame_likelihood"):
+            add(f"{av['label']}: {k}", "archetypes", av[k])
+    add("Dimensional share of total wood", "misc", reg["dimensional_share_of_total"])
+    for k, rec in reg["recovery"].items():
+        add(f"Recovery: {k}", "recovery", rec)
+    for k, rec in reg["forecast"].items():
+        add(f"Forecast: {k}", "forecast", rec)
+    for k, rec in reg["confidence_band"].items():
+        add(f"Confidence band: {k}", "confidence_band", rec)
+    for k, rec in reg["value_per_bf_cad"].items():
+        add(f"Reclaimed value ({k} tier)", "value", rec)
+    add("New lumber price", "value", reg["new_lumber_cad_per_bf"])
+    return pd.DataFrame(rows)
+
+
 def cap(text):
     """A caption with explicit, readable contrast (does not rely on Streamlit's
     faded caption colour, which is too light on the cream background)."""
@@ -247,9 +295,15 @@ def cap(text):
 
 _IMG_DIR = os.path.join(os.path.dirname(__file__), "assets", "img")
 
+# CCC feedback (July 2026): stock images distract from the information-rich pages.
+# Images are off. Set this to True to restore the photography everywhere.
+SHOW_STOCK_IMAGES = False
+
 
 def banner(name, alt="", max_width=None):
     """Full-width content image, edge to edge, resizing with the page like the charts."""
+    if not SHOW_STOCK_IMAGES:
+        return
     p = os.path.join(_IMG_DIR, name)
     if not os.path.exists(p):
         return
@@ -257,17 +311,18 @@ def banner(name, alt="", max_width=None):
 
 
 def img_float(name, text, width="100%", caption=""):
-    """Intro text, then an image (full-width or centered). Clean, with no side gaps."""
+    """Intro text, then an image. Images are hidden per CCC feedback; the text stays."""
     if text:
         st.markdown(text)
-    banner(name, "", None if str(width).strip() == "100%" else width)
-    if caption:
-        cap(caption)
+    if SHOW_STOCK_IMAGES:
+        banner(name, "", None if str(width).strip() == "100%" else width)
+        if caption:
+            cap(caption)
 
 
 TIER_COLOR = {"high": "#2e7d32", "medium": "#f9a825", "low": "#c62828"}
-# Confidence score per market, derived from data-coverage tier (mirrors the
-# Monte Carlo bands: high +/-15%, medium +/-25%, low +/-45%).
+# Confidence score per market, derived from the data-quality tier (mirrors the
+# Monte Carlo bands: high +/-10%, medium +/-25%, low +/-45%).
 TIER_CONFIDENCE = {"high": 85, "medium": 75, "low": 55}
 
 
@@ -279,7 +334,8 @@ st.sidebar.caption("Circular Construction Canada")
 
 NAV = [
     ("", ["Overview"]),
-    ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty"]),
+    ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
+                "Chain of evidence"]),
     ("Demand", ["Demand segments", "Demand drivers", "Economics"]),
     ("Ecosystem", ["Ecosystem", "Supply gaps", "Demand gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
@@ -324,7 +380,7 @@ st.sidebar.caption(_scenarios[scenario_key]["note"])
 
 allow_network = st.sidebar.toggle(
     "Use live open-data feeds", value=False,
-    help="Pull real Toronto demolition permits by year (offline fallback if unreachable).")
+    help="Pull live Toronto and Vancouver demolition permits by year (offline fallback if unreachable).")
 st.sidebar.caption("Every coefficient is sourced. See the Sources & void section.")
 
 st.sidebar.markdown("---")
@@ -354,7 +410,7 @@ with st.sidebar.expander("Glossary"):
         "a range instead of a single number.\n"
         "- **P10 / P50 / P90**: the 10th, 50th and 90th percentiles of those runs, a conservative, "
         "central and optimistic estimate.\n"
-        "- **Coverage tier (high / medium / low)**: how much real data backs a metro's estimate, "
+        "- **Data quality (high / medium / low)**: how much real data backs a metro's estimate, "
         "which sets its confidence band.\n"
         "- **Tier A / Tier B demand**: Tier A is legal today (non-structural uses); Tier B needs a "
         "building-code change for structural reuse.\n\n"
@@ -395,16 +451,33 @@ if page == "Overview":
     </div>
     """, unsafe_allow_html=True)
     banner("hero.jpg", "Reclaimed wood")
-    st.markdown(
-        "<p style='color:var(--muted);font-size:0.84rem;line-height:1.45;"
-        "margin:-0.6rem 0 1.15rem'>Reclaimed wood: abundant in Canada's building stock, "
-        "and the focus of this layer.</p>", unsafe_allow_html=True)
+    if SHOW_STOCK_IMAGES:
+        st.markdown(
+            "<p style='color:var(--muted);font-size:0.84rem;line-height:1.45;"
+            "margin:-0.6rem 0 1.15rem'>Reclaimed wood: abundant in Canada's building stock, "
+            "and the focus of this layer.</p>", unsafe_allow_html=True)
     nat = data["mc_nat"]
+    _geo = summary.copy()
+    _geo["province"] = _geo["cma"].map(ecosystem.CMA_PROVINCE).fillna("Other")
+    _provs = sorted(_geo["province"].unique())
+    _pick = st.multiselect("Roll up by province (default is all of Canada)", _provs, default=_provs,
+                           help="Filter the headline number to one province or a group of provinces.")
+    _sel = _geo[_geo["province"].isin(_pick)] if _pick else _geo
+    _scope = "Canada" if (not _pick or len(_pick) == len(_provs)) else ", ".join(_pick)
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Gross wood content", fmt_bf(summary["gross_bf"].sum()))
-    c2.metric("Recoverable", fmt_bf(summary["recoverable_bf"].sum()))
-    c3.metric("Spec-ready reusable", fmt_bf(summary["spec_ready_bf"].sum()))
-    c4.metric("Reclaimed value (CAD/yr)", fmt_cad(summary["value_cad"].sum()))
+    c1.metric("Gross wood content", fmt_bf(_sel["gross_bf"].sum()))
+    c2.metric("Recoverable", fmt_bf(_sel["recoverable_bf"].sum()))
+    c3.metric("Spec-ready reusable", fmt_bf(_sel["spec_ready_bf"].sum()))
+    c4.metric("Reclaimed value (CAD/yr)", fmt_cad(_sel["value_cad"].sum()))
+    st.caption(f"Roll-up scope: {_scope}")
+    with st.expander("Totals by province"):
+        _pt = (_geo.groupby("province")[["spec_ready_bf", "value_cad"]].sum()
+               .sort_values("spec_ready_bf", ascending=False).reset_index())
+        _pt["spec_ready_bf"] = _pt["spec_ready_bf"].map(fmt_bf)
+        _pt["value_cad"] = _pt["value_cad"].map(fmt_cad)
+        st.dataframe(_pt.rename(columns={"province": "Province", "spec_ready_bf": "spec-ready",
+                                         "value_cad": "reclaimed value/yr"}),
+                     width="stretch", hide_index=True)
 
     cap(f"National spec-ready, Monte Carlo P10-P50-P90: "
                f"{fmt_bf(nat['spec_ready']['p10'])}  ->  "
@@ -430,7 +503,7 @@ if page == "Overview":
         color="coverage_tier", color_discrete_map=TIER_COLOR, hover_name="cma",
         hover_data={"spec_ready_bf": ":,.0f", "value_cad": ":,.0f",
                     "lat": False, "lon": False},
-        scope="north america", size_max=40, labels={"coverage_tier": "Data coverage"})
+        scope="north america", size_max=40, labels={"coverage_tier": "Data quality"})
     style_geo(fig, 460)
     st.plotly_chart(fig, width="stretch")
 
@@ -441,7 +514,8 @@ if page == "Overview":
         top["spec_ready"] = top["spec_ready_bf"].map(fmt_bf)
         top["value/yr"] = top["value_cad"].map(fmt_cad)
         top["confidence"] = top["coverage_tier"].map(TIER_CONFIDENCE).map(lambda v: f"{v}/100")
-        st.dataframe(top[["cma", "coverage_tier", "confidence", "spec_ready", "value/yr"]],
+        st.dataframe(top[["cma", "coverage_tier", "confidence", "spec_ready", "value/yr"]]
+                     .rename(columns={"coverage_tier": "data quality"}),
                      width="stretch", hide_index=True)
     with colB:
         st.markdown("**Top markets by reclaimed value**")
@@ -450,11 +524,11 @@ if page == "Overview":
                      labels={"value_cad": "CAD / yr", "cma": ""})
         style_chart(fig, 320, yaxis=dict(autorange="reversed"))
         st.plotly_chart(fig, width="stretch")
-    cap("Marker size = spec-ready lumber. Colour = data coverage, a confidence class based on how "
+    cap("Marker size = spec-ready lumber. Colour = data quality, a confidence class based on how "
         "each metro's demolition count is known: "
-        "<b>high</b> (green) = live permit feed, about +/-10% (Toronto only); "
+        "<b>high</b> (green) = live permit feed, about +/-10% (Toronto and Vancouver); "
         "<b>medium</b> (amber) = real StatCan demolition figure with the cohort split modelled, "
-        "about +/-25% (5 metros); "
+        "about +/-25% (4 metros); "
         "<b>low</b> (red) = inferred from dwellings x a sourced rate, about +/-45% (the other 19).")
 
 
@@ -478,8 +552,10 @@ if page == "Municipal baseline":
     m2.metric("Annual demolition permits", f"{sub['permits'].sum():,.0f}")
     m3.metric("Spec-ready", fmt_bf(sub["spec_ready_bf"].sum()))
     m4.metric("Reclaimed value/yr", fmt_cad(sub["value_cad"].sum()))
-    cap(("Housing-stock age: real StatCan distribution." if rec["vintage_is_real"]
-                else "Housing-stock age: calibrated profile (no CMA-specific StatCan row).")
+    cap(("Era mix of demolitions: StatCan stock age, weighted by an estimated teardown-propensity "
+         "curve (older homes are torn down at higher rates)." if rec["vintage_is_real"]
+                else "Era mix of demolitions: calibrated stock-age profile, weighted by estimated "
+                     "teardown propensity.")
                + f" Demolition source: {sub['source'].iloc[0]}.")
 
     colA, colB = st.columns(2)
@@ -595,7 +671,7 @@ if page == "Forecast & uncertainty":
     u3.metric("Spec-ready P90 (optimistic)", fmt_bf(nat["spec_ready"]["p90"]))
     cap("4,000 draws. Recovery coefficients are sampled jointly across all CMAs "
                "(correlated national error that doesn't diversify away), and the demolition "
-               "count is sampled per CMA by coverage tier.")
+               "count is sampled per CMA by data-quality level.")
 
     st.markdown("**Per-CMA spec-ready, P50 with P10-P90 (top 12)**")
     mc = data["mc_cma"].head(12).copy()
@@ -633,10 +709,106 @@ if page == "Forecast & uncertainty":
     cum_show = cum.copy()
     for c in ["central", "low", "high"]:
         cum_show[c] = cum_show[c].map(fmt_bf)
-    st.dataframe(cum_show.rename(columns={"central": "central (sum)", "coverage_tier": "coverage"}),
+    st.dataframe(cum_show.rename(columns={"central": "central (sum)", "coverage_tier": "data quality"}),
                  width="stretch", hide_index=True)
     cap("Demand is forecast too: see Demand drivers for the demand outlook to 2036 and the "
         "supply-demand balance over time.")
+
+
+# --------------------------------------------------------------------------- #
+# Chain of evidence (CCC ask: one worked example, source to output)
+# --------------------------------------------------------------------------- #
+if page == "Chain of evidence":
+    st.subheader("Chain of evidence: from a permit to a number (Toronto)")
+    st.markdown(
+        "This page traces the model end to end for one city, so every output can be followed back to its "
+        "input. It answers a simple question: how does the tool get from a demolition permit to a "
+        "board-foot, dollar, and carbon estimate? The example is Toronto, base year. Every multiplier below "
+        "is a sourced coefficient you can change on the Assumptions page.")
+    reg = build_registry(scenario_key)
+    tor = data["supply"][data["supply"]["cma"] == "Toronto"]
+    tdemo = data["demo"][data["demo"]["cma"] == "Toronto"]
+    src = tdemo["source"].iloc[0] if len(tdemo) else "Toronto Open Data"
+    permits = tor["permits"].sum()
+    floor = tor["floor_area_m2"].sum()
+    framing = tor["framing_bf"].sum()
+    gross = tor["gross_bf"].sum()
+    recoverable = tor["recoverable_bf"].sum()
+    salvageable = tor["salvageable_bf"].sum()
+    spec = tor["spec_ready_bf"].sum()
+    value = tor["value_cad"].sum()
+    avoided = carbon.avoided_production_t(spec)
+
+    st.markdown("**The full chain, all building eras combined**")
+    chain = pd.DataFrame([
+        {"Step": "1. Demolition permits", "Result": f"{permits:,.0f} /yr",
+         "What is applied": "Live city open-data count", "Provenance": provenance_label("obs", src)},
+        {"Step": "2. Wood-frame demolished floor area", "Result": f"{floor:,.0f} m2",
+         "What is applied": "x wood-frame likelihood and floor area by era", "Provenance": "Published"},
+        {"Step": "3. Framing lumber", "Result": fmt_bf(framing),
+         "What is applied": "x framing lumber per m2 by era (55 to 85)", "Provenance": "Published"},
+        {"Step": "4. Recoverable", "Result": fmt_bf(recoverable),
+         "What is applied": "x recovery-method factor x age condition", "Provenance": "Published"},
+        {"Step": "5. Salvageable dimensional", "Result": fmt_bf(salvageable),
+         "What is applied": "x denail and sort yield", "Provenance": "Estimated"},
+        {"Step": "6. Spec-ready reusable", "Result": fmt_bf(spec),
+         "What is applied": "x structural regrade pass rate", "Provenance": "Published"},
+        {"Step": "Reclaimed value", "Result": fmt_cad(value),
+         "What is applied": "x reclaimed price per bf by era", "Provenance": "Published"},
+        {"Step": "Carbon avoided", "Result": f"{avoided:,.0f} t CO2e/yr",
+         "What is applied": "x avoided-manufacturing factor", "Provenance": "Published"},
+        {"Step": "Gross total wood (headline)", "Result": fmt_bf(gross),
+         "What is applied": "framing / dimensional share", "Provenance": "Estimated"},
+    ])
+    st.dataframe(chain, width="stretch", hide_index=True)
+    cap(f"Permit source: {src}. Coefficients differ by building era, so this view sums across eras. The "
+        "worked example below shows the exact numbers for one home.")
+
+    st.markdown("**One worked example: a single pre-1946 detached home in Toronto**")
+    a = reg["archetypes"]["sfd_prewar"]
+    wfl = val(a["wood_frame_likelihood"]); fa = val(a["floor_area_m2"]); fbf = val(a["framing_bf_per_m2"])
+    rmf = val(reg["recovery"]["recovery_method_factor"]); cond = model.condition_factor(reg, 9.0)
+    denail = val(reg["recovery"]["denail_sort_yield"]); grading = val(reg["recovery"]["grading_pass_rate"])
+    dim = val(reg["dimensional_share_of_total"]); vtier = a["value_tier"]
+    vbf = val(reg["value_per_bf_cad"][vtier])
+    e_floor = fa * wfl
+    e_fram = e_floor * fbf
+    e_gross = e_fram / dim
+    e_rec = e_fram * rmf * cond
+    e_salv = e_rec * denail
+    e_spec = e_salv * grading
+    e_val = e_spec * vbf
+    e_co2 = carbon.avoided_production_t(e_spec)
+    ex = pd.DataFrame([
+        {"Step": "Building", "Calculation": "1 pre-1946 detached home", "Result": "1",
+         "Source (provenance)": f"{src} (Observed)"},
+        {"Step": "Wood-frame floor area", "Calculation": f"{fa} m2 x {wfl} likelihood",
+         "Result": f"{e_floor:,.0f} m2", "Source (provenance)": f"{a['floor_area_m2']['source']} (Published)"},
+        {"Step": "Framing lumber", "Calculation": f"{e_floor:,.0f} m2 x {fbf} bf/m2",
+         "Result": f"{e_fram:,.0f} bf", "Source (provenance)": f"{a['framing_bf_per_m2']['source']} (Published)"},
+        {"Step": "Recoverable", "Calculation": f"{e_fram:,.0f} x {rmf} method x {cond:.2f} condition",
+         "Result": f"{e_rec:,.0f} bf",
+         "Source (provenance)": f"{reg['recovery']['recovery_method_factor']['source']} (Published)"},
+        {"Step": "Salvageable", "Calculation": f"{e_rec:,.0f} x {denail} denail/sort",
+         "Result": f"{e_salv:,.0f} bf",
+         "Source (provenance)": f"{reg['recovery']['denail_sort_yield']['source']} (Estimated)"},
+        {"Step": "Spec-ready reusable", "Calculation": f"{e_salv:,.0f} x {grading} regrade pass",
+         "Result": f"{e_spec:,.0f} bf",
+         "Source (provenance)": f"{reg['recovery']['grading_pass_rate']['source']} (Published)"},
+        {"Step": "Reclaimed value", "Calculation": f"{e_spec:,.0f} bf x ${vbf}/bf ({vtier} tier)",
+         "Result": f"${e_val:,.0f}",
+         "Source (provenance)": f"{reg['value_per_bf_cad'][vtier]['source']} (Published)"},
+        {"Step": "Carbon avoided", "Calculation": f"{e_spec:,.0f} bf x avoided-manufacturing factor",
+         "Result": f"{e_co2:,.2f} t CO2e", "Source (provenance)": "carbon.py (Published)"},
+        {"Step": "Gross total wood", "Calculation": f"{e_fram:,.0f} / {dim} dimensional share",
+         "Result": f"{e_gross:,.0f} bf",
+         "Source (provenance)": f"{reg['dimensional_share_of_total']['source']} (Estimated)"},
+    ])
+    st.dataframe(ex, width="stretch", hide_index=True)
+    cap("Definition. Spec-ready means clean, denailed, dried dimensional lumber that passes a "
+        "No.2-or-better structural regrade. It is the narrowest of these categories: gross wood is "
+        "everything in the building, recoverable is what survives the teardown method, salvageable is what "
+        "survives denailing and sorting, and spec-ready is what then passes grading.")
 
 
 # --------------------------------------------------------------------------- #
@@ -732,7 +904,8 @@ if page == "Ecosystem":
     style_chart(fig, 320)
     st.plotly_chart(fig, width="stretch")
     banner("workshop.jpg", "Wood processing workshop")
-    cap("Processing and remanufacturing: de-nailing, sorting and milling salvaged boards.")
+    if SHOW_STOCK_IMAGES:
+        cap("Processing and remanufacturing: de-nailing, sorting and milling salvaged boards.")
 
     st.markdown("#### Storage and warehousing")
     st.markdown("Warehousing is the connective layer between recovery and reuse, and it is the "
@@ -881,7 +1054,8 @@ if page == "Demand segments":
                  width="stretch", hide_index=True)
 
     banner("demand.jpg", "Reclaimed wood installed in an interior")
-    cap("Reclaimed wood installed in a finished interior: the demand side at work.")
+    if SHOW_STOCK_IMAGES:
+        cap("Reclaimed wood installed in a finished interior: the demand side at work.")
     st.markdown("#### Market context")
     st.dataframe(pd.DataFrame(demand.MARKET_CONTEXT, columns=["Indicator", "Value", "Source"]),
                  width="stretch", hide_index=True)
@@ -1284,8 +1458,9 @@ if page == "Embodied carbon":
     style_chart(fig, 420)
     st.plotly_chart(fig, width="stretch")
     banner("carbon.jpg", "Modern wood building")
-    cap("Wood buildings count reused components as zero upfront embodied carbon "
-        "(Toronto Green Standard v4).")
+    if SHOW_STOCK_IMAGES:
+        cap("Wood buildings count reused components as zero upfront embodied carbon "
+            "(Toronto Green Standard v4).")
 
     st.markdown("**Detail by market**")
     show = cb.copy()
@@ -1312,11 +1487,11 @@ if page == "Platform roadmap":
 
     phases = [
         ("Phase 0", "now", "Defensible intelligence layer",
-         "This app. One live connector (Toronto), modelled coverage for 24 metros, a transparent "
+         "This app. Two live connectors (Toronto and Vancouver), modelled coverage for 23 metros, a transparent "
          "assumptions registry, and an honest void report. Buys credibility CCC can defend."),
         ("Phase 1", "0 to 6 months", "Widen real coverage",
-         "Add machine-readable permit feeds (Vancouver, Ottawa, Calgary, Hamilton) behind the same "
-         "schema. Coverage tiers climb and confidence bands tighten on their own."),
+         "Add machine-readable permit feeds (Calgary, Edmonton, Ottawa, Hamilton) behind the same "
+         "schema. Data quality climbs and confidence bands tighten on their own."),
         ("Phase 2", "6 to 18 months", "Two-sided intake and verified actors",
          "Open the supply registry to contractors to register sites, and the demand registry to buyers "
          "to post standing wants. Verify the processor, warehouse and buyer directory. Both sides of "
@@ -1628,6 +1803,13 @@ if page == "Assumptions":
             "wood_frame_likelihood": val(v["wood_frame_likelihood"]),
             "value_tier": v["value_tier"]})
     st.dataframe(pd.DataFrame(arch_rows), width="stretch", hide_index=True)
+
+    st.markdown("**Full provenance table (every coefficient)**")
+    st.markdown("Each input, its value and plausible range, and whether it is observed, published, "
+                "estimated, projected, or AI-generated. None of the model's coefficients are AI-generated; "
+                "they are published sources or reasoned estimates. The demolition counts the model runs on "
+                "are live open data for Toronto and Vancouver.")
+    st.dataframe(coefficient_rows(defaults), width="stretch", hide_index=True)
     cap("Editing a slider clears the pipeline cache on next run. Full provenance "
                "and caveats are in docs/SOURCES.md.")
 
@@ -1645,12 +1827,12 @@ if page == "Sources & void":
     void = data["void"].copy()
     void["confidence_band_pm"] = void["confidence_band_pm"].map(lambda x: f"+/- {x*100:.0f}%")
     st.dataframe(void, width="stretch", hide_index=True)
-    st.markdown("**Coverage tiers across the 25 CMAs**")
+    st.markdown("**Data quality across the 25 CMAs**")
     tier_counts = data["void"]["coverage_tier"].value_counts().reset_index()
     tier_counts.columns = ["coverage_tier", "cma_count"]
     fig = px.bar(tier_counts, x="coverage_tier", y="cma_count", color="coverage_tier",
                  color_discrete_map=TIER_COLOR,
-                 labels={"cma_count": "number of CMAs", "coverage_tier": "coverage tier"})
+                 labels={"cma_count": "number of CMAs", "coverage_tier": "data quality"})
     style_chart(fig, 300, showlegend=False)
     st.plotly_chart(fig, width="stretch")
     src = os.path.join(os.path.dirname(__file__), "docs", "SOURCES.md")
@@ -1671,7 +1853,7 @@ if page == "How it works":
 
     st.markdown("#### The pipeline, end to end")
     stages = [
-        ("01", "Sourcing & inputs", ["Toronto Open Data (live permits, daily)",
+        ("01", "Sourcing & inputs", ["Toronto & Vancouver Open Data (live permits, daily)",
             "StatCan 2021 Census (dwellings, housing age)",
             "StatCan Building Permits (demolition rates)",
             "Coefficients (USDA FPL, Oregon DEQ, MPAC)"]),
@@ -1776,10 +1958,10 @@ if page == "How it works":
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("#### Coverage tier sets the band")
+        st.markdown("#### Data quality sets the band")
         st.dataframe(pd.DataFrame([
-            {"Coverage": "HIGH", "Markets": "Toronto (live permit feed)", "Band": "+/- 10%"},
-            {"Coverage": "MEDIUM", "Markets": "Vancouver, Montreal, Calgary, Edmonton, Ottawa-Gatineau", "Band": "+/- 25%"},
+            {"Coverage": "HIGH", "Markets": "Toronto, Vancouver (live permit feed)", "Band": "+/- 10%"},
+            {"Coverage": "MEDIUM", "Markets": "Montreal, Calgary, Edmonton, Ottawa-Gatineau", "Band": "+/- 25%"},
             {"Coverage": "LOW", "Markets": "The other 19 CMAs (inferred)", "Band": "+/- 45%"},
         ]), width="stretch", hide_index=True)
     with c2:
