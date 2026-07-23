@@ -246,7 +246,8 @@ def provenance_label(group, source):
         return "Estimated"  # chosen band widths, not observed values
     if any(k in s for k in ("claude", "gpt", "llm", "ai-generated", "ai generated")):
         return "AI-generated"
-    if any(k in s for k in ("reasoned", "placeholder", "inferred", "engineering", "volume math")):
+    if any(k in s for k in ("reasoned", "placeholder", "inferred", "engineering", "volume math",
+                            "synthesis", "estimated")):
         return "Estimated"
     if any(k in s for k in ("live", "open data", "by-year", "opendatasoft", "ckan")):
         return "Observed"
@@ -267,6 +268,7 @@ def coefficient_rows(reg):
             "Unit": rec.get("unit", ""),
             "Provenance": provenance_label(group, rec.get("source", "")),
             "Source": rec.get("source", ""),
+            "Reference": rec.get("url", ""),
         })
 
     for av in reg["archetypes"].values():
@@ -275,6 +277,8 @@ def coefficient_rows(reg):
     add("Dimensional share of total wood", "misc", reg["dimensional_share_of_total"])
     for k, rec in reg["recovery"].items():
         add(f"Recovery: {k}", "recovery", rec)
+    for k, rec in reg["contamination_discount"].items():
+        add(f"Contamination discount: {k}", "contamination", rec)
     for k, rec in reg["forecast"].items():
         add(f"Forecast: {k}", "forecast", rec)
     for k, rec in reg["confidence_band"].items():
@@ -332,15 +336,17 @@ TIER_CONFIDENCE = {"high": 85, "medium": 75, "low": 55}
 st.sidebar.title("Reclaimed Lumber Intelligence")
 st.sidebar.caption("Circular Construction Canada")
 
+# Supply is the primary story this phase (CCC feedback). Demand, ecosystem, and
+# platform are kept as a subordinate "supporting & future layers" group, not removed.
 NAV = [
     ("", ["Overview"]),
-    ("Supply", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
-                "Chain of evidence"]),
-    ("Demand", ["Demand segments", "Demand drivers", "Economics"]),
-    ("Ecosystem", ["Ecosystem", "Supply gaps", "Demand gaps"]),
+    ("Supply (core)", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
+                       "Chain of evidence", "Supply gaps"]),
     ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
-    ("Platform", ["Platform roadmap", "Supply registry", "Demand registry", "Matchmaking"]),
     ("Reference", ["Assumptions", "Sources & void", "How it works"]),
+    ("Supporting & future layers", ["Cascade strategy", "Demand segments", "Demand drivers",
+                                    "Economics", "Ecosystem", "Demand gaps", "Platform roadmap",
+                                    "Supply registry", "Demand registry", "Matchmaking"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
 if "page" not in st.session_state or st.session_state.page not in PAGES:
@@ -456,6 +462,12 @@ if page == "Overview":
             "<p style='color:var(--muted);font-size:0.84rem;line-height:1.45;"
             "margin:-0.6rem 0 1.15rem'>Reclaimed wood: abundant in Canada's building stock, "
             "and the focus of this layer.</p>", unsafe_allow_html=True)
+    st.markdown(
+        "This is a supply-side forecasting tool. It estimates how much reusable lumber Canada's 25 largest "
+        "metros could recover from building demolitions, where it is, and under what assumptions, for "
+        "policymakers sizing the opportunity and for recovery operators planning ahead. Every number traces "
+        "to a source on the Assumptions page, and each metro carries a data-quality tier and an uncertainty "
+        "band, so you can see what is measured versus modelled.")
     nat = data["mc_nat"]
     _geo = summary.copy()
     _geo["province"] = _geo["cma"].map(ecosystem.CMA_PROVINCE).fillna("Other")
@@ -1342,6 +1354,41 @@ if page == "Policy & capacity":
               width="100%",
               caption="Municipal policy sets the rules: a city hall in Ontario.")
 
+    st.markdown("#### Policy simulator: what a bylaw bundle does to supply")
+    st.caption("Toggle policies on to see the effect on recoverable, spec-ready supply, value and carbon. "
+               "Each policy is modelled as an effect on the recovery rate, the dominant supply lever; "
+               "effects stack and are capped at documented recovery outcomes. Sources are listed below.")
+    _reg0 = build_registry(scenario_key)
+    _base_rec = val(_reg0["recovery"]["recovery_method_factor"])
+    _on = {}
+    _pc = st.columns(2)
+    for _i, _lev in enumerate(policy.POLICY_LEVERS):
+        with _pc[_i % 2]:
+            _on[_lev[0]] = st.toggle(_lev[1], value=False, key=f"pol_{_lev[0]}",
+                                     help=f"{_lev[4]} ({_lev[5]})")
+    _rec = _base_rec
+    for _lev in policy.POLICY_LEVERS:
+        if _on[_lev[0]]:
+            _rec = max(_rec, _lev[2]) if _lev[3] == "set" else _rec + _lev[2]
+    _rec = min(_rec, 0.86)
+    _mult = _rec / _base_rec if _base_rec else 1.0
+    _bspec = data["summary"]["spec_ready_bf"].sum(); _bval = data["summary"]["value_cad"].sum()
+    _aspec = _bspec * _mult; _aval = _bval * _mult
+
+    def _co2(bf):
+        return carbon.avoided_production_t(bf) + carbon.avoided_landfill_t(bf) + carbon.biogenic_stored_t(bf)
+    _m1, _m2, _m3 = st.columns(3)
+    _m1.metric("Spec-ready supply", fmt_bf(_aspec), f"{(_mult - 1) * 100:+.0f}% vs baseline")
+    _m2.metric("Reclaimed value/yr", fmt_cad(_aval), f"{(_mult - 1) * 100:+.0f}%")
+    _m3.metric("Climate benefit", f"{_co2(_aspec):,.0f} t CO2e/yr", f"{_co2(_aspec) - _co2(_bspec):+,.0f} t")
+    cap(f"Effective recovery rate moves from {_base_rec:.2f} to {_rec:.2f} with the selected policies. "
+        "Spec-ready supply is linear in the recovery rate, so value and carbon scale with it.")
+    with st.expander("Policy levers and sources"):
+        for _lev in policy.POLICY_LEVERS:
+            _eff = f"sets recovery to {_lev[2]:.2f}" if _lev[3] == "set" else f"+{_lev[2]:.2f} recovery"
+            st.markdown(f"- **{_lev[1]}** ({_eff}) — [{_lev[4]}]({_lev[6]}) ({_lev[5]})")
+    st.markdown("---")
+
     prov_smes = ecosystem.province_company_estimate()
     med_supply = data["summary"]["spec_ready_bf"].median()
     rows = []
@@ -1434,17 +1481,22 @@ if page == "Embodied carbon":
 
     spec = data["summary"]["spec_ready_bf"].sum()
     av = carbon.avoided_production_t(spec); bio = carbon.biogenic_stored_t(spec)
-    c1, c2, c3 = st.columns(3)
+    land = carbon.avoided_landfill_t(spec)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Avoided manufacturing", f"{av:,.0f} t CO2e/yr", "not making new lumber", delta_color="off")
-    c2.metric("Biogenic carbon kept in use", f"{bio:,.0f} t CO2e/yr", "vs landfill or burning", delta_color="off")
-    c3.metric("Total climate benefit", f"{av + bio:,.0f} t CO2e/yr", delta_color="off")
+    c2.metric("Avoided landfill methane", f"{land:,.0f} t CO2e/yr", "not landfilling the wood", delta_color="off")
+    c3.metric("Biogenic carbon kept in use", f"{bio:,.0f} t CO2e/yr", "vs landfill or burning", delta_color="off")
+    c4.metric("Total climate benefit", f"{av + land + bio:,.0f} t CO2e/yr", delta_color="off")
+    cap("Avoided landfill methane: about 217 kg CO2e per tonne of wood diverted (Napier et al. 2007 "
+        "via US EPA WARM and Athena, in [USDA FS Bergman et al. 2013]"
+        "(https://research.fs.usda.gov/download/treesearch/43547.pdf)).")
     st.info(f"Toronto Green Standard v4 lets reused or salvaged components count as zero upfront "
             f"embodied carbon against its {carbon.TGS_TIER2_CAP} (Tier 2) and {carbon.TGS_TIER3_CAP} "
             "(Tier 3) kg CO2e/m2 caps, so reclaimed lumber directly helps projects meet the cap.")
-    cars = (av + bio) / 4.6
+    cars = (av + land + bio) / 4.6
     st.success(f"In plain terms, that total climate benefit is roughly {cars:,.0f} passenger cars "
-               "off the road for a year (US EPA: 4.6 t CO2e per vehicle per year), combining "
-               "avoided manufacturing and biogenic carbon kept in use.")
+               "off the road for a year (US EPA: 4.6 t CO2e per vehicle per year), combining avoided "
+               "manufacturing, avoided landfill methane, and biogenic carbon kept in use.")
 
     st.markdown("#### Carbon benefit by market")
     cb = data["summary"][["cma", "spec_ready_bf"]].copy()
@@ -1809,7 +1861,8 @@ if page == "Assumptions":
                 "estimated, projected, or AI-generated. None of the model's coefficients are AI-generated; "
                 "they are published sources or reasoned estimates. The demolition counts the model runs on "
                 "are live open data for Toronto and Vancouver.")
-    st.dataframe(coefficient_rows(defaults), width="stretch", hide_index=True)
+    st.dataframe(coefficient_rows(defaults), width="stretch", hide_index=True,
+                 column_config={"Reference": st.column_config.LinkColumn("Reference", display_text="link")})
     cap("Editing a slider clears the pipeline cache on next run. Full provenance "
                "and caveats are in docs/SOURCES.md.")
 
@@ -1980,3 +2033,109 @@ if page == "How it works":
             st.download_button("Download as PDF", pf.read(),
                                file_name="Reclaimed_Lumber_How_It_Works.pdf",
                                mime="application/pdf")
+
+
+# --------------------------------------------------------------------------- #
+# Cascade strategy (demand-side): functional cascade vs constraint cascade
+# --------------------------------------------------------------------------- #
+if page == "Cascade strategy":
+    import config.cascade as casc
+    st.subheader("Cascade strategy: functional vs constraint")
+    st.markdown(
+        "Two ways to decide which reuse markets to pursue first. The **functional (material) cascade** "
+        "ranks pathways by remaining functionality, highest structural use first, to keep carbon in "
+        "material form as long as possible (CWC, March 2026). The **constraint cascade** ranks by how "
+        "hard each market is to unlock, easiest first, so the highest-leverage markets move first "
+        "(Pelech, 10 Jul 2026). This compares the two for the demand side.")
+
+    df = pd.DataFrame(casc.PATHWAYS, columns=casc.PATHWAY_COLS)
+    df["ease_score"] = 6 - df["ease"]
+    df["tier_label"] = df["tier"].map({"A": "Legal today (Tier A)", "B": "Code-gated (Tier B)"})
+    TIERCOL = {"Legal today (Tier A)": "#2e7d32", "Code-gated (Tier B)": "#c62828"}
+
+    st.markdown("#### Where to start: value premium against ease of unlocking")
+    fig = px.scatter(df, x="ease_score", y="premium_x", size="market_now", color="tier_label",
+                     text="pathway", size_max=42, color_discrete_map=TIERCOL,
+                     labels={"ease_score": "Easier to unlock →", "premium_x": "Value (x commodity)",
+                             "tier_label": ""})
+    fig.update_traces(textposition="top center", textfont_size=10)
+    fig.update_layout(height=520, margin=dict(l=10, r=10, t=30, b=10),
+                      legend=dict(orientation="h", y=1.08))
+    st.plotly_chart(fig, width="stretch")
+    cap("Bubble size = share of the market that exists today. Architectural, furniture and flooring sit "
+        "top-right (high premium, easy to unlock). Structural reuse is bottom-left (commodity value, "
+        "hardest). Premium range from CWC 1.1.4 (March 2026); ease and market from the Pelech note "
+        "(10 Jul 2026); positions are a reasoned synthesis.")
+
+    st.markdown("#### The two lenses, side by side")
+    hm = df.copy()
+    hm["Functionality"] = (6 - hm["functional_rank"]) / 5
+    hm["Value premium"] = hm["premium_x"] / hm["premium_x"].max()
+    hm["Ease to unlock"] = hm["ease_score"] / 5
+    hm["Market today"] = hm["market_now"]
+    hm["Speed (soon)"] = 1 - (hm["years"] / hm["years"].max())
+    hcols = ["Functionality", "Value premium", "Ease to unlock", "Market today", "Speed (soon)"]
+    figh = px.imshow(hm.set_index("pathway")[hcols], color_continuous_scale="Greens",
+                     aspect="auto", zmin=0, zmax=1)
+    figh.update_layout(height=470, margin=dict(l=10, r=10, t=10, b=10), coloraxis_showscale=False)
+    st.plotly_chart(figh, width="stretch")
+    cap("Darker = stronger. The functional cascade rewards the Functionality column; the constraint "
+        "cascade rewards Ease, Value premium, Market today and Speed. The two lenses point at "
+        "different markets, which is the whole argument.")
+
+    st.markdown("#### Reordering: functional cascade against constraint cascade")
+    colf, colc = st.columns(2)
+    with colf:
+        st.caption("Functional cascade (CWC): highest structural use first")
+        fc = pd.DataFrame(casc.FUNCTIONAL_CASCADE, columns=["stage", "detail"])
+        fc["rank"] = range(len(fc), 0, -1)
+        ff = px.funnel(fc, x="rank", y="stage")
+        ff.update_traces(marker_color="#6f8e7c")
+        ff.update_layout(height=340, margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
+        st.plotly_chart(ff, width="stretch")
+    with colc:
+        st.caption("Constraint cascade (Pelech): easiest market first")
+        cc = df.sort_values("ease").reset_index(drop=True)
+        fcc = px.bar(cc, x="ease_score", y="pathway", orientation="h", color="tier_label",
+                     color_discrete_map=TIERCOL,
+                     labels={"ease_score": "Easier to unlock →", "pathway": "", "tier_label": ""})
+        fcc.update_layout(height=340, margin=dict(l=10, r=10, t=10, b=10),
+                          yaxis=dict(autorange="reversed"), showlegend=False)
+        st.plotly_chart(fcc, width="stretch")
+    cap("The functional cascade puts structural reuse first (the hardest); the constraint cascade puts "
+        "the architectural and design markets first (the easiest, at 3 to 10x commodity value).")
+
+    st.markdown("#### Reclamation timeline: when each pathway unlocks")
+    tl = pd.DataFrame(casc.RECLAMATION_TIMELINE, columns=["item", "years", "note"])
+    figt = px.bar(tl, x="years", y="item", orientation="h", text="years",
+                  labels={"years": "years from now", "item": ""})
+    figt.update_traces(marker_color="#2f7d4f")
+    figt.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=10), yaxis=dict(autorange="reversed"))
+    st.plotly_chart(figt, width="stretch")
+    st.dataframe(tl.rename(columns={"item": "Milestone", "years": "years out", "note": "Why"}),
+                 width="stretch", hide_index=True)
+
+    st.markdown("#### What to solve next: the constraint and leverage matrix")
+    cl = pd.DataFrame(casc.CONSTRAINT_LEVERS, columns=["constraint", "ease", "impact"])
+    cl["ease_score"] = 5 - cl["ease"]
+    figc = px.scatter(cl, x="ease_score", y="impact", text="constraint", size="impact", size_max=34,
+                      labels={"ease_score": "Easier →", "impact": "Potential impact"})
+    figc.update_traces(textposition="top center", marker_color="#002a5c")
+    figc.update_layout(height=470, margin=dict(l=10, r=10, t=30, b=10))
+    st.plotly_chart(figc, width="stretch")
+    cap("Top-right is the priority: high impact and easy to do. Better supply visibility and buyer "
+        "matching, which is exactly what this tool provides, sit there. Structural certification and "
+        "code reform are high-impact but hard, so they come later (Pelech note, 10 Jul 2026).")
+
+    st.markdown("#### The reframed loop: prediction creates demand")
+    st.markdown(" → ".join(f"**{s}**" for s in casc.FEEDBACK_LOOP))
+    cap("Prediction shifts from describing the market to enabling it: a permit signals future supply, "
+        "buyers commit, and capacity is organised before the building comes down (Pelech note).")
+
+    st.markdown("---")
+    st.markdown("**Sources**")
+    for _label, _date, _url in casc.SOURCES.values():
+        if _url:
+            st.markdown(f"- [{_label}]({_url}) ({_date})")
+        else:
+            st.markdown(f"- {_label} ({_date}) — internal draft, not yet public")

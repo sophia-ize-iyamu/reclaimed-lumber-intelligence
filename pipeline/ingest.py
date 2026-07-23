@@ -247,16 +247,23 @@ def build_demolition_table(base_year=None, allow_network=True):
 
         # The era mix of demolitions is NOT the era mix of the standing stock:
         # teardown hazard rises with building age. Weight each cohort's stock
-        # share by an estimated teardown propensity, then renormalise.
+        # share by an estimated teardown propensity, then renormalise. Then split
+        # each era by structure type, so multi-unit and attached demolitions use
+        # their own archetypes instead of being modelled as single-family detached.
         w = {c: vintage[c] * prop.get(c, 1.0) for c in COHORTS}
         wtot = sum(w.values()) or 1.0
+        tshare = reg["demolition_type_share"]
+        tarch = reg["type_archetype"]
         for cohort in COHORTS:
-            rows.append({
-                "cma": name, "year": base_year, "cohort": cohort,
-                "archetype": reg["cohort_to_archetype"][cohort],
-                "permits": annual * (w[cohort] / wtot),
-                "source": source, "coverage_tier": tier,
-            })
+            emix = w[cohort] / wtot
+            for tkey, tsh in tshare.items():
+                archetype = reg["cohort_to_archetype"][cohort] if tkey == "detached" else tarch[tkey]
+                rows.append({
+                    "cma": name, "year": base_year, "cohort": cohort,
+                    "archetype": archetype,
+                    "permits": annual * tsh * emix,
+                    "source": source, "coverage_tier": tier,
+                })
     return canonical.validate_demolitions(pd.DataFrame(rows))
 
 

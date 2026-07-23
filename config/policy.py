@@ -97,3 +97,29 @@ def policy_for(cma, province):
         province,
         (1, "Emerging", "Municipal waste plans; no construction-specific deconstruction "
          "by-law documented", "Municipal climate/waste plans"))
+
+
+# Stackable policy levers for the supply-side simulator. Each is modelled as an
+# effect on the effective recovery rate (the share of structural wood recovered
+# intact), which is the dominant supply lever. "set" raises recovery to a floor;
+# "uplift" adds. Effects are sourced and dated; combined recovery is capped at 0.86
+# (the Vancouver full-deconstruction outcome). Modelling every policy through the
+# recovery rate is a deliberate simplification, stated in the app.
+# (key, label, value, kind, source, date, url)
+POLICY_LEVERS = [
+    ("mandatory_deconstruction", "Mandatory deconstruction bylaw", 0.70, "set",
+     "City of Vancouver Green Demolition Bylaw (about 86% recovery for full deconstruction)",
+     "2014, amended 2019", "https://www.reminetwork.com/articles/vancouver-green-demolition-bylaw/"),
+    ("landfill_ban", "Clean-wood landfill ban", 0.10, "uplift",
+     "Metro Vancouver Clean Wood Disposal Ban", "2018",
+     "https://metrovancouver.org/services/solid-waste"),
+    ("tipping_fee", "Higher construction-waste tipping fees", 0.06, "uplift",
+     "EREF municipal-waste tipping-fee study; UK Landfill Tax response (WRAP)", "2023-2024",
+     "https://www.cdrecycler.com/news/eref-release-study-on-msw-tipping-fees/"),
+    ("procurement", "Public procurement for reclaimed content", 0.04, "uplift",
+     "California CALGreen; CalRecycle model deconstruction ordinance", "2022",
+     "https://calrecycle.ca.gov/lgcentral/library/canddmodel/"),
+    ("grading_standard", "Structural re-grading standard", 0.06, "uplift",
+     "SWST evaluation of salvaged framing grade-pass rate", "2019",
+     "https://wfs.swst.org/index.php/wfs/article/view/2879"),
+]

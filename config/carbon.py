@@ -29,6 +29,13 @@ BF_TO_M3 = 0.0023597  # one board foot = 1/12 cubic foot
 AVOIDED_PRODUCTION_KG_PER_M3 = 62.0
 BIOGENIC_STORED_KG_PER_M3 = 785.0
 
+# Landfill methane avoided per tonne of wood kept out of landfill (blended, with
+# partial gas capture). Source: Napier et al. 2007 via US EPA WARM and Athena, as
+# summarised in USDA FS Bergman et al. 2013 (FPL-RP-676). Wood density used to turn
+# board feet into tonnes: about 492 kg/m3 (surfaced dry softwood, ~15% MC).
+AVOIDED_LANDFILL_KG_PER_TONNE = 217.0
+WOOD_KG_PER_M3 = 492.0
+
 # Toronto Green Standard v4 embodied-carbon caps (kg CO2e/m2), for context.
 TGS_TIER2_CAP = 350
 TGS_TIER3_CAP = 250
@@ -42,6 +49,12 @@ def avoided_production_t(board_feet):
 def biogenic_stored_t(board_feet):
     """Tonnes CO2e of biogenic carbon kept in use by reusing this volume."""
     return board_feet * BF_TO_M3 * BIOGENIC_STORED_KG_PER_M3 / 1000.0
+
+
+def avoided_landfill_t(board_feet):
+    """Tonnes CO2e of landfill methane avoided by keeping this wood out of landfill."""
+    tonnes_wood = board_feet * BF_TO_M3 * WOOD_KG_PER_M3 / 1000.0
+    return tonnes_wood * AVOIDED_LANDFILL_KG_PER_TONNE / 1000.0
 
 
 def total_benefit_t(board_feet):

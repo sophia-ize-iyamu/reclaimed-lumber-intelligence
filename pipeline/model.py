@@ -68,7 +68,9 @@ def estimate_supply(demo_table, reg=None):
         gross_total = framing / dim_share
 
         condition = condition_factor(reg, _COHORT_DECADES.get(r["cohort"], 3.0))
-        recoverable = framing * rmf * condition
+        contam = val(reg["contamination_discount"].get(
+            r["cohort"], reg["contamination_discount"]["1981_2000"]))
+        recoverable = framing * rmf * condition * (1.0 - contam)
         salvageable = recoverable * denail
         spec_ready = salvageable * grading
 

@@ -93,14 +93,47 @@ ARCHETYPES = {
         "value_tier": "low",
     },
     "low_rise_multi": {
-        "label": "Low-rise multi-unit",
-        "framing_bf_per_m2": C(55, 45, 70, "bf/m2", "Reasoned (shared walls, more concrete/steel)",
-                               "https://www.fpl.fs.usda.gov", "Lower wood intensity per floor area."),
-        "floor_area_m2": C(520, 350, 800, "m2", "Reasoned", "https://www150.statcan.gc.ca",
-                           "Building-level floor area for a low-rise multi."),
-        "wood_frame_likelihood": C(0.80, 0.65, 0.90, "fraction", "BC Gov 2019; reasoned",
-                                   "https://news.gov.bc.ca/releases/2019FLNR0033-000571",
-                                   "Mix of wood-frame and concrete/steel; widest uncertainty."),
+        "label": "Low-rise multi-unit (per unit)",
+        "framing_bf_per_m2": C(47.9, 40, 71.7, "bf/m2",
+                               "Elling & McKeever 2015 (APA), Canada multifamily framing",
+                               "https://research.fs.usda.gov/download/treesearch/53618.pdf",
+                               "Structural framing per m2 for multifamily; lower wood intensity."),
+        "floor_area_m2": C(100, 85, 113, "m2",
+                           "NRCan SHEU 2015 (apartments 98.6 m2/unit); Elling & McKeever 2015",
+                           "https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm"
+                           "?type=SHCMA&sector=aaa&juris=ca&year=2015&rn=9&page=1",
+                           "Floor area per dwelling unit for a low-rise apartment."),
+        "wood_frame_likelihood": C(0.70, 0.50, 0.90, "fraction", "CWC / WoodWorks mid-rise; reasoned",
+                                   "https://cwc.ca/", "Mix of wood-frame and concrete or steel; widest uncertainty."),
+        "value_tier": "medium",
+    },
+    "semi_detached": {
+        "label": "Semi-detached",
+        "framing_bf_per_m2": C(55.8, 48, 70, "bf/m2",
+                               "Elling & McKeever 2015 (APA), Canada single-family aggregate",
+                               "https://research.fs.usda.gov/download/treesearch/53618.pdf",
+                               "Semi and row not measured separately; light-frame single-family proxy."),
+        "floor_area_m2": C(123, 105, 172, "m2", "Elling & McKeever 2015 (APA), semi and row combined",
+                           "https://research.fs.usda.gov/download/treesearch/53618.pdf", "Per-unit floor area."),
+        "wood_frame_likelihood": C(0.96, 0.90, 0.99, "fraction",
+                                   "CMHC, Canadian Wood-Frame House Construction",
+                                   "https://publications.gc.ca/collections/collection_2014/schl-cmhc/",
+                                   "Attached wood-frame."),
+        "value_tier": "medium",
+    },
+    "row_townhouse": {
+        "label": "Row / townhouse",
+        "framing_bf_per_m2": C(55.8, 48, 70, "bf/m2",
+                               "Elling & McKeever 2015 (APA), Canada single-family aggregate",
+                               "https://research.fs.usda.gov/download/treesearch/53618.pdf",
+                               "Semi and row not measured separately; light-frame single-family proxy."),
+        "floor_area_m2": C(123, 110, 131, "m2",
+                           "Elling & McKeever 2015 (APA); CMHC row above-grade area",
+                           "https://research.fs.usda.gov/download/treesearch/53618.pdf", "Per-unit floor area."),
+        "wood_frame_likelihood": C(0.95, 0.88, 0.99, "fraction",
+                                   "CMHC, Canadian Wood-Frame House Construction",
+                                   "https://publications.gc.ca/collections/collection_2014/schl-cmhc/",
+                                   "Attached wood-frame."),
         "value_tier": "medium",
     },
 }
@@ -124,6 +157,17 @@ COHORT_TO_ARCHETYPE = {
 TEARDOWN_PROPENSITY = {
     "pre1946": 2.5, "1946_1980": 1.6, "1981_2000": 1.0, "2001_2010": 0.5, "post2010": 0.2,
 }
+
+# Share of demolished residential dwelling units by structure type (Canada, 2022).
+# StatCan Building Permits, table 34-10-0285-01 (cottage folded into detached).
+# Applied to each city's demolition base so multi-unit and attached demolitions use
+# their own archetypes instead of being modelled as single-family detached.
+# https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3410028501
+DEMOLITION_TYPE_SHARE = {"detached": 0.82, "semi": 0.012, "row": 0.014, "apartment": 0.154}
+
+# Which archetype each non-detached structure type maps to (detached uses the
+# era-specific cohort_to_archetype mapping above).
+TYPE_ARCHETYPE = {"semi": "semi_detached", "row": "row_townhouse", "apartment": "low_rise_multi"}
 
 # Fraction of total wood content that is dimensional framing (framing -> total).
 DIMENSIONAL_SHARE_OF_TOTAL = C(
@@ -157,6 +201,34 @@ RECOVERY = {
         0.55, 0.35, 0.70, "fraction", "Falk FPL-RP-650; Arbelaez et al. 2019",
         "https://www.swst.org/wp/wp-content/uploads/2019/10/wfs2879.pdf",
         "Share of clean salvaged dimensional lumber passing >= No.2 structural regrade."),
+}
+
+# Fraction of recoverable dimensional lumber LOST to contamination and engineered
+# wood, by building era. Older stock is nearly all solid-sawn and clean; newer stock
+# has more I-joists, trusses, LVL and OSB (not reclaimable as dimensional lumber),
+# plus lead paint (pre-1980) and asbestos (pre-1990) handling losses. Applied on top
+# of the recovery-method factor and age condition.
+CONTAMINATION_DISCOUNT = {
+    "pre1946":   C(0.08, 0.05, 0.12, "fraction",
+                   "Oregon DEQ deconstruction study (Nunes, Palmeri & Love); Arbelaez et al. 2019",
+                   "https://www.oregon.gov/deq/FilterDocs/DeconstructionReport.pdf",
+                   "Pre-1960 stock is mostly solid-sawn and clean; loss is rot and biodegradation."),
+    "1946_1980": C(0.22, 0.12, 0.35, "fraction",
+                   "Synthesis: engineered-wood share 1970-1990 (SBCA/Home Innovation) + Oregon DEQ",
+                   "https://www.oregon.gov/deq/FilterDocs/DeconstructionReport.pdf",
+                   "More engineered members and lead/asbestos handling reduce reclaimable yield."),
+    "1981_2000": C(0.35, 0.20, 0.50, "fraction",
+                   "Synthesis: engineered-wood share rising post-1990 (APA/SBCA) + Oregon DEQ",
+                   "https://en.wikipedia.org/wiki/I-joist",
+                   "Trusses and I-joists increasingly displace reclaimable dimensional framing."),
+    "2001_2010": C(0.45, 0.30, 0.60, "fraction",
+                   "Synthesis: engineered-wood share post-2000, I-joists ~50% of floors (APA)",
+                   "https://en.wikipedia.org/wiki/I-joist",
+                   "Engineered wood dominates; little reclaimable solid-sawn dimensional lumber."),
+    "post2010":  C(0.45, 0.30, 0.60, "fraction",
+                   "Synthesis: engineered-wood share post-2000, I-joists ~50% of floors (APA)",
+                   "https://en.wikipedia.org/wiki/I-joist",
+                   "Engineered wood dominates; little reclaimable solid-sawn dimensional lumber."),
 }
 
 # Recovery-method presets (override recovery_method_factor for a project or scenario).
@@ -197,12 +269,18 @@ CONFIDENCE_BAND = {
 # Reclaimed lumber value (CAD per board foot). USD to CAD about 1.37 (mid-2025/26).
 # --------------------------------------------------------------------------- #
 VALUE_PER_BF_CAD = {
-    "low":    C(3.70, 3.30, 4.80, "CAD/bf", "Aurora Mills price guide 2023",
-                "https://www.auroramills.com", "Common reclaimed 2x dimensional."),
-    "medium": C(4.80, 4.10, 5.65, "CAD/bf", "Aurora Mills; WoodWeb",
-                "https://www.woodweb.com", "Resawn fir, small timber."),
-    "high":   C(12.00, 10.30, 16.50, "CAD/bf", "WoodWeb antique Douglas fir beams",
-                "https://www.woodweb.com", "Old-growth large-section beams."),
+    "low":    C(5.00, 3.30, 8.00, "CAD/bf",
+                "Reclaimed dealer price lists (Aurora Mills Jan 2023; Green Mission 2026), USD-CAD 1.37",
+                "https://thegreenmissioninc.com/the-lumber-market-in-2026/",
+                "Common reclaimed 2x dimensional lumber, de-nailed and sorted."),
+    "medium": C(6.50, 4.50, 9.00, "CAD/bf",
+                "Reclaimed dealer price lists (2023-2026), USD-CAD 1.37",
+                "https://thegreenmissioninc.com/the-lumber-market-in-2026/",
+                "Resawn fir and mixed reclaimed dimensional, mid-grade."),
+    "high":   C(9.00, 6.50, 13.00, "CAD/bf",
+                "Old-growth reclaimed dimensional Douglas fir (PlaceMakers; The Lumber Baron 2026), USD-CAD 1.37",
+                "https://placemakersinc.com/product/old-growth-doug-fir/",
+                "Old-growth reclaimed dimensional lumber, not antique beams (which run higher)."),
 }
 NEW_LUMBER_CAD_PER_BF = C(4.45, 3.40, 5.50, "CAD/bf", "NAHB framing composite; retail",
                           "https://www.nahb.org", "New softwood retail reference.")
@@ -244,8 +322,11 @@ def get_assumptions():
         "archetypes": copy.deepcopy(ARCHETYPES),
         "cohort_to_archetype": dict(COHORT_TO_ARCHETYPE),
         "teardown_propensity": dict(TEARDOWN_PROPENSITY),
+        "demolition_type_share": dict(DEMOLITION_TYPE_SHARE),
+        "type_archetype": dict(TYPE_ARCHETYPE),
         "dimensional_share_of_total": copy.deepcopy(DIMENSIONAL_SHARE_OF_TOTAL),
         "recovery": copy.deepcopy(RECOVERY),
+        "contamination_discount": copy.deepcopy(CONTAMINATION_DISCOUNT),
         "method_factor": dict(METHOD_FACTOR),
         "forecast": copy.deepcopy(FORECAST),
         "confidence_band": copy.deepcopy(CONFIDENCE_BAND),
