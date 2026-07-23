@@ -297,38 +297,38 @@ def cap(text):
         f"margin:0.1rem 0 0.5rem'>{text}</p>", unsafe_allow_html=True)
 
 
-# Per-page superscript references. _page_refs re-initialises every rerun (the whole
-# script re-executes), accumulates the sources the current page registers via ref(),
-# and footnotes() prints the dated, linked list at the bottom of that page.
-_page_refs = []
-
-
-def ref(label, url="", date=""):
-    """Register a source for the current page; return a superscript clickable marker."""
-    key = (label, url, date)
-    if key not in _page_refs:
-        _page_refs.append(key)
-    n = _page_refs.index(key) + 1
-    target = url if url else "#"
-    return (f"<sup style='font-size:0.72em'>[<a href='{target}' target='_blank' "
-            f"style='text-decoration:none'>{n}</a>]</sup>")
-
-
-def footnotes():
-    """Render the current page's numbered sources (date and link) at the bottom."""
-    if not _page_refs:
-        return
-    st.markdown("---")
-    lines = ["**Sources**"]
-    for i, (label, url, date) in enumerate(_page_refs, 1):
-        d = f" ({date})" if date else ""
-        lines.append(f"{i}. [{label}]({url}){d}" if url else f"{i}. {label}{d}")
-    st.markdown("  \n".join(lines))
+# Global, stable footnote numbering. Every source in config/refs.py has a fixed
+# number, so a citation reads the same number on every page (numbering is continuous
+# across the whole app, not restarted per page). rr() cites a source and returns its
+# superscript; footnotes() lists the sources a page used, with those global numbers.
+_REF_KEYS = list(refs.REFS.keys())
+_GLOBAL_NUM = {k: i + 1 for i, k in enumerate(_REF_KEYS)}
+_page_ref_keys = []  # keys cited on the current page (re-initialised each rerun)
 
 
 def rr(key):
-    """Register a curated, link-checked source (config/refs.py) by key; return the marker."""
-    return ref(*refs.REFS[key])
+    """Cite a curated, link-checked source (config/refs.py); return a superscript
+    marker carrying the source's stable global number."""
+    if key not in _page_ref_keys:
+        _page_ref_keys.append(key)
+    label, url, date = refs.REFS[key]
+    target = url if url else "#"
+    return (f"<sup style='font-size:0.72em'>[<a href='{target}' target='_blank' "
+            f"style='text-decoration:none'>{_GLOBAL_NUM[key]}</a>]</sup>")
+
+
+def footnotes():
+    """Render the page's cited sources at the bottom, using their global numbers."""
+    if not _page_ref_keys:
+        return
+    st.markdown("---")
+    lines = ["**Sources**"]
+    for key in sorted(_page_ref_keys, key=lambda k: _GLOBAL_NUM[k]):
+        label, url, date = refs.REFS[key]
+        n = _GLOBAL_NUM[key]
+        d = f" ({date})" if date else ""
+        lines.append(f"{n}. [{label}]({url}){d}" if url else f"{n}. {label}{d}")
+    st.markdown("  \n".join(lines))
 
 
 # Sources each page draws on, listed in that page's footnotes with a date and link.
@@ -356,6 +356,8 @@ PAGE_SOURCES = {
     "Supply registry": ["toronto_permits", "vancouver_permits"],
     "Demand registry": ["eccc_circularity", "habitat_restore"],
     "Matchmaking": ["toronto_permits", "eccc_circularity"],
+    "About these layers": ["eccc_circularity", "habitat_restore"],
+    "Cascade strategy": ["cwc_markets", "prof_note", "statcan_boom", "waste_hierarchy", "eccc_circularity"],
 }
 
 
@@ -399,16 +401,16 @@ st.sidebar.title("Reclaimed Lumber Intelligence")
 st.sidebar.caption("Circular Construction Canada")
 
 # Supply is the primary story this phase (CCC feedback). Demand, ecosystem, and
-# platform are kept as a subordinate "supporting & future layers" group, not removed.
+# platform are kept as a subordinate "Beyond the supply model" group, not removed.
 NAV = [
     ("", ["Overview"]),
-    ("Supply (core)", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
-                       "Chain of evidence", "Supply gaps"]),
-    ("Policy & carbon", ["Policy & capacity", "Embodied carbon"]),
-    ("Supporting & future layers", ["Cascade strategy", "Demand segments", "Demand drivers",
-                                    "Economics", "Ecosystem", "Demand gaps", "Platform roadmap",
-                                    "Supply registry", "Demand registry", "Matchmaking"]),
-    ("Reference", ["Assumptions", "Sources & void", "How it works"]),
+    ("The Supply Model", ["Municipal baseline", "Hotspots & archetypes", "Forecast & uncertainty",
+                          "Chain of evidence", "Supply gaps"]),
+    ("Policy & Carbon Impact", ["Policy & capacity", "Embodied carbon"]),
+    ("Beyond the supply model", ["About these layers", "Cascade strategy", "Demand segments",
+                                 "Demand drivers", "Economics", "Ecosystem", "Demand gaps",
+                                 "Platform roadmap", "Supply registry", "Demand registry", "Matchmaking"]),
+    ("References", ["Assumptions", "Sources & void", "How it works"]),
 ]
 PAGES = [p for _, items in NAV for p in items]
 if "page" not in st.session_state or st.session_state.page not in PAGES:
@@ -2103,6 +2105,45 @@ if page == "How it works":
 
 
 # --------------------------------------------------------------------------- #
+# Beyond the supply model: section introduction
+# --------------------------------------------------------------------------- #
+if page == "About these layers":
+    st.subheader("Beyond the supply model")
+    st.markdown(
+        "The core of this tool is the supply forecast: how much reusable lumber Canada's largest metros can "
+        "recover from demolitions, where, and under what assumptions. Everything in this section sits around "
+        "that core, so the supply pages read first and these follow.")
+    st.markdown(
+        "**What's here.** The demand side (who wants the wood and what they will pay), the ecosystem (the "
+        "firms that recover, process and resell it), the platform vision (the supply and demand registries "
+        "and the matchmaking that pairs them), and the cascade strategy (which markets to unlock first).")
+    st.markdown(
+        "**Why it's secondary this phase.** Circular Construction Canada asked to focus on the supply-side "
+        "model first and to keep demand, ecosystem and platform as supporting context and future direction. "
+        "None of it is removed; it is deliberately behind the supply story.")
+    st.markdown(
+        "**The cascade strategy** is the constraint-cascade analysis. Instead of chasing the highest-value "
+        "use first (structural reuse, which is code-gated and years away), it unlocks the easiest, "
+        "high-value markets first, such as architectural finishes, furniture and flooring. It reframes the "
+        "demand question around what to solve next.")
+    st.markdown("**A quick guide to this section:**")
+    st.dataframe(pd.DataFrame([
+        {"Page": "Cascade strategy", "What it covers":
+         "Functional vs constraint cascade, reclamation timelines, and what to unlock first"},
+        {"Page": "Demand segments and drivers", "What it covers":
+         "Who buys reclaimed wood, and the forces pulling demand forward"},
+        {"Page": "Economics", "What it covers":
+         "Costs, value, and the deconstruction-versus-demolition gap"},
+        {"Page": "Ecosystem", "What it covers": "The firms across the recovery and reuse chain"},
+        {"Page": "Demand gaps", "What it covers": "Where demand outruns supply, market by market"},
+        {"Page": "Platform roadmap", "What it covers":
+         "How the tool grows from an intelligence layer to a two-sided platform"},
+        {"Page": "Registries and matchmaking", "What it covers":
+         "Logging supply and demand, and pairing teardowns with buyers"},
+    ]), width="stretch", hide_index=True)
+
+
+# --------------------------------------------------------------------------- #
 # Cascade strategy (demand-side): functional cascade vs constraint cascade
 # --------------------------------------------------------------------------- #
 if page == "Cascade strategy":
@@ -2113,7 +2154,8 @@ if page == "Cascade strategy":
         "ranks pathways by remaining functionality, highest structural use first, to keep carbon in "
         "material form as long as possible (CWC, March 2026). The **constraint cascade** ranks by how "
         "hard each market is to unlock, easiest first, so the highest-leverage markets move first "
-        "(Pelech, 10 Jul 2026). This compares the two for the demand side.")
+        "(Pelech, 10 Jul 2026). This compares the two for the demand side."
+        + rr("cwc_markets") + rr("prof_note"), unsafe_allow_html=True)
 
     df = pd.DataFrame(casc.PATHWAYS, columns=casc.PATHWAY_COLS)
     df["ease_score"] = 6 - df["ease"]
@@ -2199,13 +2241,8 @@ if page == "Cascade strategy":
     cap("Prediction shifts from describing the market to enabling it: a permit signals future supply, "
         "buyers commit, and capacity is organised before the building comes down (Pelech note).")
 
-    st.markdown("---")
-    st.markdown("**Sources**")
-    for _label, _date, _url in casc.SOURCES.values():
-        if _url:
-            st.markdown(f"- [{_label}]({_url}) ({_date})")
-        else:
-            st.markdown(f"- {_label} ({_date}) — internal draft, not yet public")
+    # Sources render via the global footnotes() at the end of the script,
+    # using the same stable numbering as every other page.
 
 
 # Register this page's curated sources, then render the dated, linked footnotes.
