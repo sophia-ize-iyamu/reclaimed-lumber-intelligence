@@ -22,7 +22,7 @@ import streamlit as st
 
 from config import assumptions as A
 from config import cmas as cma_cfg
-from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem, refs
+from config import companies, demand, carbon, policy, demand_drivers, demand_ecosystem, refs, definitions
 from config.assumptions import val
 from pipeline import ingest, model, forecast, ecosystem, projects, uncertainty, demand_registry
 
@@ -295,6 +295,13 @@ def cap(text):
     st.markdown(
         f"<p style='color:var(--muted);font-size:0.84rem;line-height:1.45;"
         f"margin:0.1rem 0 0.5rem'>{text}</p>", unsafe_allow_html=True)
+
+
+def defn_table(title, rows):
+    """Collapsible table of plain-language variable definitions."""
+    with st.expander(title):
+        st.dataframe(pd.DataFrame(rows, columns=["Variable", "Definition"]),
+                     width="stretch", hide_index=True)
 
 
 # Global, stable footnote numbering. Every source in config/refs.py has a fixed
@@ -641,6 +648,7 @@ if page == "Municipal baseline":
                      "teardown propensity.")
                + f" Demolition source: {sub['source'].iloc[0]}."
                + rr("statcan_vintage") + rr("statcan_demo_type"))
+    defn_table("What the cascade terms mean", definitions.CASCADE_TERMS)
 
     colA, colB = st.columns(2)
     with colA:
@@ -811,6 +819,7 @@ if page == "Chain of evidence":
         "is a sourced coefficient you can change on the Assumptions page."
         + rr("toronto_permits") + rr("mckeever94") + rr("oregon_deq"),
         unsafe_allow_html=True)
+    defn_table("What the cascade terms mean", definitions.CASCADE_TERMS)
     reg = build_registry(scenario_key)
     tor = data["supply"][data["supply"]["cma"] == "Toronto"]
     tdemo = data["demo"][data["demo"]["cma"] == "Toronto"]
@@ -1553,6 +1562,7 @@ if page == "Embodied carbon":
                 "keeps biogenic carbon locked in service. This ties the supply estimate to "
                 "municipal embodied-carbon goals.")
 
+    defn_table("What the carbon terms mean", definitions.CARBON_TERMS)
     spec = data["summary"]["spec_ready_bf"].sum()
     av = carbon.avoided_production_t(spec); bio = carbon.biogenic_stored_t(spec)
     land = carbon.avoided_landfill_t(spec)
@@ -1894,6 +1904,14 @@ if page == "Assumptions":
     if "assumption_overrides" not in st.session_state:
         st.session_state["assumption_overrides"] = {}
     defaults = A.get_assumptions()
+    with st.expander("Definitions of the adjustable variables"):
+        _adefs = []
+        for _g, _k, _m in A.flat_editable_rows(defaults):
+            if _m["unit"] == "year":
+                continue
+            _adefs.append({"Variable": _k.replace("_", " "), "Definition": _m["basis"],
+                           "Unit": _m["unit"], "Range": f"{_m['low']} to {_m['high']}"})
+        st.dataframe(pd.DataFrame(_adefs), width="stretch", hide_index=True)
     cols = st.columns(2)
     i = 0
     for group, key, meta in A.flat_editable_rows(defaults):
@@ -2161,6 +2179,7 @@ if page == "Cascade strategy":
         "hard each market is to unlock, easiest first, so the highest-leverage markets move first "
         "(Pelech, 10 Jul 2026). This compares the two for the demand side."
         + rr("cwc_markets") + rr("prof_note"), unsafe_allow_html=True)
+    defn_table("What the dimensions mean", definitions.CASCADE_DIMENSIONS)
 
     df = pd.DataFrame(casc.PATHWAYS, columns=casc.PATHWAY_COLS)
     df["ease_score"] = 6 - df["ease"]
